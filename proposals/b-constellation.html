@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>案B 知の星図</title>
+<style>
+:root{--bg:#0b0f1e;--panel:rgba(20,26,48,.92);--ink:#e8ecff;--sub:#8f9ac0;--line:#2a3358;--r:#8ea2ff;--l:#5fe0b0;--o:#ffb36b;--t:#c9a7ff}
+:root[data-theme=light]{--bg:#f3f4fb;--panel:rgba(255,255,255,.95);--ink:#1b2040;--sub:#636b8f;--line:#d9dcef;--r:#3b55d9;--l:#11916a;--o:#c86414;--t:#7a4fd0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;overflow-x:hidden}
+header{position:fixed;inset:0 0 auto 0;display:flex;align-items:center;gap:14px;padding:14px 20px;z-index:3;pointer-events:none}
+header>*{pointer-events:auto}
+.brand{font-weight:800;letter-spacing:.04em}.brand small{display:block;font-weight:400;font-size:11px;color:var(--sub)}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--sub);margin-left:auto;flex-wrap:wrap}.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+svg#g{width:100vw;height:100vh;display:block}
+.node{cursor:pointer}.node text{font-size:12px;fill:var(--ink);pointer-events:none}
+.edge{stroke:var(--line);stroke-width:1}.edge.hl{stroke:var(--ink);stroke-opacity:.7;stroke-width:1.6}
+.dim{opacity:.18}
+aside{position:fixed;right:16px;top:76px;bottom:90px;width:360px;max-width:calc(100vw - 32px);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;overflow:auto;z-index:4;backdrop-filter:blur(8px);transform:translateX(120%);transition:transform .25s}
+aside.open{transform:none}
+aside h2{margin:4px 0 8px;font-size:18px}.k{font-size:11px;color:var(--sub);letter-spacing:.08em}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);color:var(--sub);margin:2px 4px 2px 0}
+.blk{border-left:2px solid var(--line);padding:2px 0 2px 10px;margin:10px 0;font-size:13px;line-height:1.7}.blk b{font-size:11px;color:var(--sub);display:block}
+.x{position:absolute;right:12px;top:10px;background:none;border:0;color:var(--sub);font-size:20px;cursor:pointer}
+.capture{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);width:min(720px,calc(100vw - 32px));display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;z-index:4}
+.capture input,.capture select{background:transparent;border:0;color:var(--ink);font:inherit;font-size:14px;padding:8px}.capture input{flex:1;min-width:0}
+.capture select{border-right:1px solid var(--line)}
+.capture button,aside button{background:var(--r);color:#fff;border:0;border-radius:10px;padding:8px 16px;font:inherit;cursor:pointer}
+.rel a{color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line)}
+.chart{color:var(--o)}
+.hint{position:fixed;left:20px;bottom:86px;font-size:12px;color:var(--sub);z-index:2}
+.theme{background:none;border:1px solid var(--line);color:var(--sub);border-radius:99px;padding:4px 10px;font-size:12px;cursor:pointer}
+@media (max-width:640px){.legend{display:none}aside{top:auto;bottom:80px;height:55vh;width:auto;left:16px;right:16px}.hint{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">For the Future Lab<small>案B：知の星図 ― すべての知識はつながっている</small></div>
+  <div class="legend"><span><i style="background:var(--r)"></i>研究</span><span><i style="background:var(--l)"></i>学習</span><span><i style="background:var(--o)"></i>観測</span><span><i style="background:var(--t)"></i>タグ（つながり）</span></div>
+  <button class="theme" onclick="toggleTheme()">◐</button>
+</header>
+<svg id="g"></svg>
+<div class="hint">星をクリックで詳細 ／ 大きな星は「部屋」</div>
+<aside id="p"><button class="x" onclick="closeP()">×</button><div id="pc"></div></aside>
+<form class="capture" onsubmit="capture(event)">
+  <select id="cr"><option value="research">研究</option><option value="learning">学習</option><option value="observe">観測</option></select>
+  <input id="ct" placeholder="思いついたことを放り込む…  #タグ で星座につながる">
+  <button>追加</button>
+</form>
+<script src="shared/store.js"></script>
+<script>
+const e=Lab.esc,D=()=>Lab.data,svg=document.getElementById('g'),NS='http://www.w3.org/2000/svg';
+const COL={research:'var(--r)',learning:'var(--l)',observe:'var(--o)',tag:'var(--t)'};
+let nodes=[],edges=[],sel=null;
+
+function build(){
+  const W=innerWidth,H=innerHeight,cx=W/2,cy=H/2+10,R=Math.min(W,H)*.32;
+  const old=Object.fromEntries(nodes.map(n=>[n.id,n]));
+  const hubs=['research','learning','observe'].map((r,i)=>({id:'hub-'+r,kind:'hub',room:r,label:Lab.ROOMS[r],r:26,
+    x:cx+R*Math.cos(-Math.PI/2+i*2*Math.PI/3),y:cy+R*Math.sin(-Math.PI/2+i*2*Math.PI/3),fixed:true}));
+  const items=Lab.allItems().map(it=>({id:it.id,kind:'item',room:it.room,label:it.title,tags:it.tags,r:9}));
+  const tagSet=[...new Set(items.flatMap(i=>i.tags))];
+  const tagN=tagSet.map(t=>({id:'tag-'+t,kind:'tag',room:'tag',label:'#'+t,r:5}));
+  nodes=[...hubs,...items,...tagN];
+  nodes.forEach(n=>{if(n.fixed)return;const o=old[n.id];n.x=o?o.x:cx+(Math.random()-.5)*R;n.y=o?o.y:cy+(Math.random()-.5)*R;});
+  edges=[];items.forEach(i=>{edges.push({a:'hub-'+i.room,b:i.id,len:R*.55});i.tags.forEach(t=>edges.push({a:i.id,b:'tag-'+t,len:70}))});
+  simulate(cx,cy);draw();
+}
+function simulate(cx,cy){
+  const by=Object.fromEntries(nodes.map(n=>[n.id,n]));
+  for(let k=0;k<300;k++){
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j];let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1;const f=1800/(d*d);dx/=d;dy/=d;
+      if(!a.fixed){a.x-=dx*f;a.y-=dy*f}if(!b.fixed){b.x+=dx*f;b.y+=dy*f}}
+    edges.forEach(ed=>{const a=by[ed.a],b=by[ed.b];let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1;const f=(d-ed.len)*.02;dx/=d;dy/=d;
+      if(!a.fixed){a.x+=dx*f;a.y+=dy*f}if(!b.fixed){b.x-=dx*f;b.y-=dy*f}});
+    nodes.forEach(n=>{if(!n.fixed){n.x+=(cx-n.x)*.002;n.y+=(cy-n.y)*.002;n.x=Math.max(30,Math.min(innerWidth-30,n.x));n.y=Math.max(80,Math.min(innerHeight-90,n.y))}});
+  }
+}
+function draw(){
+  const by=Object.fromEntries(nodes.map(n=>[n.id,n]));
+  let near=new Set();if(sel){near.add(sel);edges.forEach(ed=>{if(ed.a===sel)near.add(ed.b);if(ed.b===sel)near.add(ed.a)});
+    const s=by[sel];if(s&&s.kind==='item')Lab.related(sel).forEach(r=>near.add(r.id))}
+  let h='<defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+  for(let i=0;i<70;i++)h+=`<circle cx="${(i*7919)%innerWidth}" cy="${(i*104729)%innerHeight}" r="${(i%3)*.4+.3}" fill="var(--sub)" opacity=".35"/>`;
+  edges.forEach(ed=>{const a=by[ed.a],b=by[ed.b],on=sel&&(ed.a===sel||ed.b===sel);h+=`<line class="edge ${on?'hl':''} ${sel&&!on?'dim':''}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`});
+  nodes.forEach(n=>{const d=sel&&!near.has(n.id);h+=`<g class="node ${d?'dim':''}" data-id="${n.id}"><circle cx="${n.x}" cy="${n.y}" r="${n.r}" fill="${COL[n.room]}" ${n.kind!=='tag'?'filter="url(#glow)"':''}/>
+    <text x="${n.x}" y="${n.y+n.r+15}" text-anchor="middle" style="${n.kind==='hub'?'font-weight:700;font-size:14px':n.kind==='tag'?'fill:var(--sub);font-size:11px':''}">${e(n.label)}</text></g>`});
+  svg.innerHTML=h;
+  svg.querySelectorAll('.node').forEach(g=>g.onclick=()=>openNode(g.dataset.id));
+}
+function openNode(id){
+  sel=id;draw();const d=D(),pc=document.getElementById('pc');let h='';
+  const rel=ids=>ids.length?`<div class="k" style="margin-top:16px">つながっている知識</div><div class="rel">${ids.map(i=>`<div>・<a onclick="openNode('${i.id}')">${e(Lab.ROOMS[i.room])}／${e(i.title)}</a></div>`).join('')}</div>`:'';
+  if(id.startsWith('hub-')){const r=id.slice(4);const list=Lab.allItems().filter(i=>i.room===r);
+    h=`<div class="k">ROOM</div><h2>${e(Lab.ROOMS[r])}</h2><p style="font-size:13px;color:var(--sub)">${{research:'研究テーマごとに仮説・調査・実験・結論を記録する。',learning:'一生使える基礎学力を伸ばす。',observe:'重要な統計を保存し、時間による変化を追う。'}[r]}</p>${list.map(i=>`<div class="rel">・<a onclick="openNode('${i.id}')">${e(i.title)}</a></div>`).join('')}`;}
+  else if(id.startsWith('tag-')){const t=id.slice(4);h=`<div class="k">TAG</div><h2>#${e(t)}</h2>${rel(Lab.allItems().filter(i=>i.tags.includes(t)))}`;}
+  else{const r=d.research.find(x=>x.id===id),s=d.skills.find(x=>x.id===id),o=d.series.find(x=>x.id===id);
+    if(r)h=`<div class="k">総合研究室 ・ ${e(r.stage)}</div><h2>${e(r.title)}</h2>${r.tags.map(t=>`<span class="tag">#${e(t)}</span>`).join('')}
+      ${[['仮説','hypothesis'],['調査','survey'],['実験','experiment'],['結論','conclusion']].map(([a,k])=>`<div class="blk"><b>${a}</b>${e(r[k])||'<span style="color:var(--sub)">まだ空っぽ</span>'}</div>`).join('')}
+      <button onclick="advance('${r.id}')">${r.stage==='結論'?'完了済み':'次のステージへ →'}</button>`;
+    if(s){const logs=d.logs.filter(l=>l.skill===s.id);h=`<div class="k">学習室 ・ ${e(s.area)}</div><h2>${e(s.name)}</h2><div style="font-size:32px;font-weight:800;color:var(--l)">Lv.${s.level}</div>
+      <div class="k">記録 ${logs.reduce((a,l)=>a+l.minutes,0)}分</div>${logs.map(l=>`<div class="blk"><b>${e(l.date)} ・ ${l.minutes}分</b>${e(l.note)}</div>`).join('')}
+      <button onclick="study('${s.id}')">今日30分やった</button>`}
+    if(o){const c=Lab.change(o);h=`<div class="k">世界観測室 ・ ${e(o.unit)}</div><h2>${e(o.title)}</h2><div class="chart">${Lab.lineChart(o,{w:320,h:170,color:'var(--o)'})}</div>
+      ${c?`<div class="blk"><b>変化</b>${c.from}→${c.to}で ${c.pct>0?'+':''}${c.pct.toFixed(1)}%</div>`:''}<div class="k">出典：${e(o.source)}</div>`}
+    h+=rel(Lab.related(id));}
+  pc.innerHTML=h;document.getElementById('p').classList.add('open');
+}
+function closeP(){sel=null;document.getElementById('p').classList.remove('open');draw()}
+function advance(id){const r=D().research.find(x=>x.id===id),i=Lab.STAGES.indexOf(r.stage);if(i<3){r.stage=Lab.STAGES[i+1];r.updated=Lab.today();Lab.save()}openNode(id)}
+function study(id){D().logs.unshift({id:Lab.uid(),date:Lab.today(),skill:id,minutes:30,note:'星図から記録'});const s=D().skills.find(x=>x.id===id);s.level=Math.min(100,s.level+1);Lab.save();openNode(id)}
+function capture(ev){ev.preventDefault();const v=ct.value.trim();if(!v)return;const tags=[...v.matchAll(/#(\S+)/g)].map(m=>m[1]),title=v.replace(/#\S+/g,'').trim()||tags[0];const id=Lab.uid(),d=D();
+  if(cr.value==='research')d.research.unshift({id,title,stage:'仮説',tags,updated:Lab.today(),hypothesis:'',survey:'',experiment:'',conclusion:''});
+  if(cr.value==='learning')d.skills.push({id,name:title,level:10,area:'新規',tags});
+  if(cr.value==='observe')d.series.push({id,title,unit:'',source:'自分で記録',tags,points:[]});
+  Lab.save();ct.value='';build();openNode(id)}
+function toggleTheme(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='light'?'dark':'light'}
+addEventListener('resize',()=>{nodes=[];build()});build();
+</script>
+</body></html>

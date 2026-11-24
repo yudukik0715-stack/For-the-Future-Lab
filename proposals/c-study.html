@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>案C 未来の書斎</title>
+<style>
+:root{--bg:#f4efe4;--paper:#fffdf7;--ink:#2e2a24;--sub:#857b6b;--line:#e4dccb;--r:#8c3b2e;--l:#3e6b4a;--o:#2f5a7a;--gold:#b8892f}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1a16;--paper:#26231d;--ink:#ece5d6;--sub:#a89d88;--line:#3a352c;--r:#d98470;--l:#8cc49a;--o:#86b5d8;--gold:#d9b260}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Mincho ProN","Noto Serif JP","Yu Mincho",serif;line-height:1.8}
+.wrap{max-width:920px;margin:0 auto;padding:36px 16px 60px}
+header{display:flex;align-items:baseline;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:26px;flex-wrap:wrap}
+header h1{margin:0;font-size:26px;letter-spacing:.08em;cursor:pointer}header span{color:var(--sub);font-size:13px}
+header nav{margin-left:auto;display:flex;gap:16px;font-size:14px}header nav a{color:var(--ink);text-decoration:none}header nav a.on{border-bottom:2px solid var(--gold)}
+.page{background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:26px 28px;box-shadow:0 2px 0 var(--line),0 4px 0 var(--paper),0 5px 0 var(--line);margin-bottom:26px;
+  background-image:repeating-linear-gradient(transparent 0 31px,var(--line) 31px 32px);background-position:0 12px}
+.date{font-size:13px;color:var(--sub);letter-spacing:.1em}
+h2{font-size:20px;margin:4px 0 14px}h3{font-size:16px;margin:0 0 6px}
+.q{font-size:19px;margin:6px 0 12px}
+.doors{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px}
+.door{background:var(--paper);border:1px solid var(--line);border-radius:80px 80px 6px 6px;padding:34px 18px 18px;text-align:center;cursor:pointer;transition:.2s;border-bottom:6px solid var(--c)}
+.door:hover{transform:translateY(-3px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.door .ic{font-size:30px}.door p{font-size:12px;color:var(--sub);margin:6px 0 0;font-family:system-ui,sans-serif}
+.door b{display:block;font-size:22px;color:var(--c)}
+textarea,input,select{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--ink)}
+textarea{min-height:64px;resize:vertical}
+button{white-space:nowrap;font:inherit;font-size:14px;background:var(--ink);color:var(--paper);border:0;border-radius:4px;padding:7px 16px;cursor:pointer}
+.row{display:flex;gap:8px;align-items:center}.sp{flex:1}
+.tl{position:relative;padding-left:22px;border-left:2px dashed var(--gold);margin-left:6px}
+.tl div{margin:0 0 14px;position:relative}.tl div:before{content:'';position:absolute;left:-29px;top:9px;width:12px;height:12px;border-radius:50%;background:var(--gold)}
+.tl b{color:var(--gold);margin-right:8px}
+.entry{border-bottom:1px solid var(--line);padding:10px 0;font-size:15px}.entry:last-child{border:0}
+.stamp{display:inline-block;border:1.5px solid var(--c,var(--r));color:var(--c,var(--r));padding:0 8px;font-size:12px;border-radius:3px;transform:rotate(-3deg);margin-left:8px}
+details{border-bottom:1px solid var(--line);padding:10px 0}summary{cursor:pointer;font-size:17px}
+.sec{display:grid;grid-template-columns:70px 1fr;gap:10px;margin:10px 0}.sec label{color:var(--r);font-weight:700;padding-top:8px}
+.heat{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin:10px 0}.heat i{aspect-ratio:1;border-radius:3px;background:var(--line)}
+.muted{color:var(--sub);font-size:13px;font-family:system-ui,sans-serif}
+.tag{font-size:12px;color:var(--sub);margin-right:8px}
+.chart{color:var(--o);font-family:system-ui,sans-serif}
+@media (max-width:640px){.doors{grid-template-columns:1fr}.page{padding:20px 16px}header nav{margin-left:0}.sec{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1 onclick="location.hash='home'">未来の書斎</h1><span>案C：毎日ひらく、自分だけのノート</span>
+<nav><a href="#home" data-r="home">表紙</a><a href="#research" data-r="research">研究</a><a href="#learning" data-r="learning">学習</a><a href="#observe" data-r="observe">観測</a></nav></header>
+<main id="view"></main>
+</div>
+<script src="shared/store.js"></script>
+<script>
+const e=Lab.esc,D=()=>Lab.data,V=document.getElementById('view');
+const QS=['今日、いちばん「なぜ？」と思ったことは？','最近変わった自分の考えはある？','10年後の自分に伝えたいことは？','今日学んだことを、中学生に説明するなら？','世界で気になっている数字はある？','失敗から得たものは何だった？'];
+const fmtDate=d=>new Date(d).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+const views={
+home(){const d=D(),q=QS[new Date().getDate()%QS.length];
+ return `<div class="page"><div class="date">${fmtDate(Date.now())}</div><div class="q">「${q}」</div>
+  <textarea id="jt" placeholder="一行でいい。考えたこと・経験したことを書き留める。"></textarea>
+  <div class="row" style="margin-top:8px"><span class="sp muted">書いた日：${d.journal.length}日</span><button onclick="addJ()">ページに残す</button></div>
+  ${d.journal.slice(0,3).map(j=>`<div class="entry"><span class="muted">${e(j.date)}</span>　${e(j.text)}</div>`).join('')}</div>
+ <div class="doors">
+  <div class="door" style="--c:var(--r)" onclick="location.hash='research'"><div class="ic">🔬</div><b>総合研究室</b><p>問いを立て、確かめ、結論へ</p><p>${d.research.length} テーマ</p></div>
+  <div class="door" style="--c:var(--l)" onclick="location.hash='learning'"><div class="ic">📚</div><b>学習室</b><p>一生ものの基礎力を鍛える</p><p>${Lab.streak()} 日連続</p></div>
+  <div class="door" style="--c:var(--o)" onclick="location.hash='observe'"><div class="ic">🌏</div><b>世界観測室</b><p>数字で世界の変化を見る</p><p>${d.series.length} 指標</p></div>
+ </div>
+ <div class="page"><h2>未来への構想</h2><div class="tl">${d.visions.map(v=>`<div><b>${e(v.when)}</b>${e(v.text)}</div>`).join('')}</div>
+  <div class="row"><input id="vw" placeholder="いつ" style="width:100px"><input id="vt" placeholder="どんな自分になっていたい？"><button onclick="addV()">書く</button></div></div>`},
+research(){const d=D();
+ return `<div class="page"><div class="row"><h2 class="sp">総合研究室</h2><button onclick="newR()">新しい研究を始める</button></div>
+ ${d.research.map((r,ix)=>`<details ${ix===0?'open':''}><summary>${e(r.title)}<span class="stamp">${e(r.stage)}</span></summary>
+  <div class="muted">${r.tags.map(t=>'#'+e(t)).join(' ')}　最終更新 ${e(r.updated)}</div>
+  ${[['仮説','hypothesis'],['調査','survey'],['実験','experiment'],['結論','conclusion']].map(([a,k])=>`<div class="sec"><label>${a}</label><textarea onchange="upd('${r.id}','${k}',this.value)">${e(r[k])}</textarea></div>`).join('')}
+  ${Lab.related(r.id).length?`<div class="muted">関連ページ：${Lab.related(r.id).map(i=>`<a href="#${i.room}">${e(i.title)}</a>`).join('、')}</div>`:''}</details>`).join('')}</div>`},
+learning(){const d=D(),days=[];for(let i=27;i>=0;i--){const t=new Date();t.setDate(t.getDate()-i);const k=t.toISOString().slice(0,10);days.push(d.logs.filter(l=>l.date===k).reduce((a,l)=>a+l.minutes,0))}
+ return `<div class="page"><h2>学習室</h2><div class="muted">この4週間の学習（濃いほど長く勉強した日）</div>
+ <div class="heat">${days.map(m=>`<i style="background:${m?`color-mix(in srgb,var(--l) ${Math.min(100,25+m)}%,transparent)`:''}" title="${m}分"></i>`).join('')}</div>
+ ${d.skills.map(s=>`<div class="entry row"><span class="sp">${e(s.name)} <span class="tag">${e(s.area)}</span></span><span style="color:var(--l);letter-spacing:2px">${'●'.repeat(Math.round(s.level/20))}${'○'.repeat(5-Math.round(s.level/20))}</span></div>`).join('')}
+ <h3 style="margin-top:20px">今日の勉強を書き留める</h3>
+ <div class="row"><select id="ls" style="width:160px">${d.skills.map(s=>`<option value="${s.id}">${e(s.name)}</option>`).join('')}</select><input id="lm" type="number" value="30" style="width:80px"><span class="muted">分</span><input id="ln" placeholder="やったこと"><button onclick="addL()">記録</button></div></div>`},
+observe(){const d=D();
+ return d.series.map(s=>{const c=Lab.change(s);return `<div class="page"><div class="row"><h2 class="sp">${e(s.title)}</h2><span class="muted">${e(s.unit)}</span></div>
+ <div class="chart">${Lab.lineChart(s,{color:'var(--o)'})}</div>
+ ${c?`<p>${c.from}年から${c.to}年で <b style="color:var(--o)">${c.pct>0?'+':''}${c.pct.toFixed(1)}%</b> 変化した。</p>`:''}
+ <label class="muted">気づき・考察</label><textarea onchange="note('${s.id}',this.value)" placeholder="この数字から何が読み取れる？">${e(s.note||'')}</textarea>
+ <div class="muted">出典：${e(s.source)}</div></div>`}).join('')},
+};
+function render(){const r=(location.hash||'#home').slice(1);V.innerHTML=(views[r]||views.home)();document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.r===r))}
+function addJ(){if(!jt.value.trim())return;D().journal.unshift({date:Lab.today(),text:jt.value});Lab.save();render()}
+function addV(){if(!vt.value)return;D().visions.push({id:Lab.uid(),when:vw.value||'いつか',text:vt.value});Lab.save();render()}
+function upd(id,k,v){const r=D().research.find(x=>x.id===id);r[k]=v;r.updated=Lab.today();if(k==='conclusion'&&v)r.stage='結論';Lab.save()}
+function newR(){const t=prompt('どんな問いを研究する？');if(!t)return;D().research.unshift({id:Lab.uid(),title:t,stage:'仮説',tags:[],updated:Lab.today(),hypothesis:'',survey:'',experiment:'',conclusion:''});Lab.save();render()}
+function addL(){D().logs.unshift({id:Lab.uid(),date:Lab.today(),skill:ls.value,minutes:+lm.value||0,note:ln.value});const k=D().skills.find(x=>x.id===ls.value);k.level=Math.min(100,k.level+1);Lab.save();render()}
+function note(id,v){D().series.find(x=>x.id===id).note=v;Lab.save()}
+addEventListener('hashchange',render);render();
+</script>
+</body></html>

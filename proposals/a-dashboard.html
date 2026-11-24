@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>案A ラボ・コンソール</title>
+<style>
+:root{--bg:#f5f6f8;--panel:#fff;--ink:#1d2330;--sub:#6b7385;--line:#e3e6ec;--accent:#3557d4;--r:#3557d4;--l:#14916d;--o:#c2621a;--soft:#eef1fb}
+@media (prefers-color-scheme:dark){:root{--bg:#11141b;--panel:#1a1f29;--ink:#e6e9f0;--sub:#9aa3b5;--line:#2a3140;--accent:#7b96ff;--r:#7b96ff;--l:#3fc79b;--o:#f0954f;--soft:#222a3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.6}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+nav{background:var(--panel);border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh}
+.logo{font-weight:800;font-size:17px;margin:0 8px 22px}.logo small{display:block;font-weight:400;font-size:11px;color:var(--sub)}
+nav a{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:14px;margin-bottom:2px}
+nav a.on{background:var(--soft);color:var(--accent);font-weight:700}
+.dot{width:9px;height:9px;border-radius:50%}
+main{padding:28px 32px;max-width:1100px}
+h1{font-size:24px;margin:0 0 4px}.lead{color:var(--sub);margin:0 0 24px;font-size:14px}
+.grid{display:grid;gap:16px}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr 1fr}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.card h3{margin:0 0 10px;font-size:15px}
+.kpi{font-size:28px;font-weight:800}.kpi small{font-size:12px;color:var(--sub);font-weight:400;margin-left:4px}
+.room{border-top:4px solid var(--c);cursor:pointer;transition:transform .15s}.room:hover{transform:translateY(-2px)}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;background:var(--soft);color:var(--sub);margin:2px 4px 2px 0}
+.stages{display:flex;gap:4px;margin:8px 0}.stages span{flex:1;font-size:11px;text-align:center;padding:3px 0;border-radius:4px;background:var(--line);color:var(--sub)}
+.stages span.done{background:var(--r);color:#fff}
+.list>div{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}.list>div:last-child{border:0}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--l)}
+button,.btn{white-space:nowrap;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+input,textarea,select{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+textarea{min-height:70px;resize:vertical}label{font-size:12px;color:var(--sub);display:block;margin:10px 0 4px}
+.row{display:flex;gap:8px;align-items:center}.sp{flex:1}
+.phase{border-left:3px solid var(--r);padding-left:12px;margin:14px 0}
+.muted{color:var(--sub);font-size:13px}
+.chart{color:var(--o)}
+@media (max-width:760px){.app{grid-template-columns:1fr}nav{height:auto;position:static;display:flex;flex-wrap:wrap;gap:4px;padding:10px 16px}.logo{width:100%;margin-bottom:6px}main{padding:20px 16px}.g3,.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav>
+  <div class="logo">For the Future Lab<small>案A：ラボ・コンソール</small></div>
+  <a href="#home" data-r="home"><span class="dot" style="background:var(--ink)"></span>ホーム</a>
+  <a href="#research" data-r="research"><span class="dot" style="background:var(--r)"></span>総合研究室</a>
+  <a href="#learning" data-r="learning"><span class="dot" style="background:var(--l)"></span>学習室</a>
+  <a href="#observe" data-r="observe"><span class="dot" style="background:var(--o)"></span>世界観測室</a>
+</nav>
+<main id="view"></main>
+</div>
+<script src="shared/store.js"></script>
+<script>
+const D=()=>Lab.data, e=Lab.esc, V=document.getElementById('view');
+const tags=t=>t.map(x=>`<span class="tag">#${e(x)}</span>`).join('');
+const stages=s=>`<div class="stages">${Lab.STAGES.map((x,i)=>`<span class="${i<=Lab.STAGES.indexOf(s)?'done':''}">${x}</span>`).join('')}</div>`;
+const relatedHtml=id=>{const r=Lab.related(id);return r.length?`<div class="muted" style="margin-top:8px">🔗 つながり：${r.map(i=>`<a href="#${i.room}">${e(Lab.ROOMS[i.room])}／${e(i.title)}</a>`).join('、')}</div>`:''};
+
+const views={
+home(){
+  const d=D(),mins=d.logs.reduce((a,l)=>a+l.minutes,0);
+  return `<h1>おかえりなさい</h1><p class="lead">知識・思考・経験・未来への構想を、ここに集める。</p>
+  <div class="grid g3">
+    <div class="card room" style="--c:var(--r)" onclick="location.hash='research'"><h3>総合研究室</h3><div class="kpi">${d.research.length}<small>テーマ</small></div><div class="muted">結論まで到達：${d.research.filter(r=>r.stage==='結論').length}</div></div>
+    <div class="card room" style="--c:var(--l)" onclick="location.hash='learning'"><h3>学習室</h3><div class="kpi">${Lab.streak()}<small>日連続</small></div><div class="muted">累計 ${Math.round(mins/60*10)/10} 時間</div></div>
+    <div class="card room" style="--c:var(--o)" onclick="location.hash='observe'"><h3>世界観測室</h3><div class="kpi">${d.series.length}<small>指標</small></div><div class="muted">データ点 ${d.series.reduce((a,s)=>a+s.points.length,0)}</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>進行中の研究</h3><div class="list">${d.research.filter(r=>r.stage!=='結論').map(r=>`<div><b>${e(r.title)}</b>${stages(r.stage)}${tags(r.tags)}</div>`).join('')}</div></div>
+    <div class="card"><h3>未来への構想</h3><div class="list">${d.visions.map(v=>`<div><span class="tag">${e(v.when)}</span> ${e(v.text)}</div>`).join('')}</div>
+      <div class="row" style="margin-top:10px"><input id="vw" placeholder="いつ" style="width:90px"><input id="vt" placeholder="どうなっていたい？"><button onclick="addVision()">追加</button></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>最近の学習</h3><div class="list">${d.logs.slice(0,4).map(l=>`<div>${e(l.date)}　<b>${e(d.skills.find(s=>s.id===l.skill)?.name)}</b>　${l.minutes}分　<span class="muted">${e(l.note)}</span></div>`).join('')}</div></div>`;
+},
+research(){
+  const d=D();
+  return `<div class="row"><div class="sp"><h1>総合研究室</h1><p class="lead">仮説 → 調査 → 実験 → 結論。ひとつのテーマを最後まで追いかける。</p></div><button onclick="newResearch()">＋ 新しいテーマ</button></div>
+  <div class="grid">${d.research.map(r=>`<div class="card"><div class="row"><h3 class="sp" style="margin:0">${e(r.title)}</h3><span class="muted">更新 ${e(r.updated)}</span></div>${stages(r.stage)}${tags(r.tags)}
+    ${Lab.STAGES.map((s,i)=>{const k=['hypothesis','survey','experiment','conclusion'][i];return `<div class="phase"><label>${s}</label><textarea onchange="upd('${r.id}','${k}',this.value)" placeholder="${s}を書く…">${e(r[k])}</textarea></div>`}).join('')}
+    <div class="row"><label style="margin:0">ステージ</label><select style="width:auto" onchange="upd('${r.id}','stage',this.value)">${Lab.STAGES.map(s=>`<option ${s===r.stage?'selected':''}>${s}</option>`).join('')}</select></div>
+    ${relatedHtml(r.id)}</div>`).join('')}</div>`;
+},
+learning(){
+  const d=D();
+  return `<h1>学習室</h1><p class="lead">学生のうちも、社会に出てからも効く「土台の力」を育てる。</p>
+  <div class="grid g2"><div class="card"><h3>スキルマップ</h3>${d.skills.map(s=>`<div style="margin:10px 0"><div class="row"><span class="sp">${e(s.name)} <span class="tag">${e(s.area)}</span></span><b>${s.level}</b></div><div class="bar"><i style="width:${s.level}%"></i></div></div>`).join('')}</div>
+  <div class="card"><h3>学習を記録する</h3>
+    <label>スキル</label><select id="ls">${d.skills.map(s=>`<option value="${s.id}">${e(s.name)}</option>`).join('')}</select>
+    <label>時間（分）</label><input id="lm" type="number" value="30">
+    <label>やったこと</label><input id="ln" placeholder="例：英文法 第3章">
+    <div style="margin-top:12px"><button onclick="addLog()">記録する（+1レベル）</button></div>
+    <h3 style="margin-top:20px">ログ</h3><div class="list">${d.logs.slice(0,8).map(l=>`<div>${e(l.date)}　${e(d.skills.find(s=>s.id===l.skill)?.name)}　${l.minutes}分　<span class="muted">${e(l.note)}</span></div>`).join('')}</div></div></div>`;
+},
+observe(){
+  const d=D();
+  return `<h1>世界観測室</h1><p class="lead">重要な統計を保存し、時間の経過による変化を追う。</p>
+  <div class="grid g2">${d.series.map(s=>{const c=Lab.change(s);return `<div class="card"><div class="row"><h3 class="sp" style="margin:0">${e(s.title)}</h3><span class="muted">${e(s.unit)}</span></div>
+    ${c?`<div class="muted">${c.from}→${c.to}：<b style="color:var(--o)">${c.pct>0?'+':''}${c.pct.toFixed(1)}%</b></div>`:''}
+    <div class="chart">${Lab.lineChart(s,{color:'var(--o)'})}</div><div class="muted">出典：${e(s.source)}</div>${tags(s.tags)}
+    <div class="row" style="margin-top:8px"><input id="t-${s.id}" placeholder="年" style="width:80px"><input id="v-${s.id}" placeholder="値" type="number" step="any"><button onclick="addPoint('${s.id}')">追加</button></div>${relatedHtml(s.id)}</div>`}).join('')}</div>
+  <div class="card" style="margin-top:16px"><h3>新しい指標を登録</h3><div class="row"><input id="nt" placeholder="指標名（例：日本の平均賃金）"><input id="nu" placeholder="単位" style="width:100px"><button onclick="newSeries()">登録</button></div></div>`;
+}};
+
+function render(){const r=(location.hash||'#home').slice(1);V.innerHTML=(views[r]||views.home)();document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.r===r));scrollTo(0,0)}
+function upd(id,k,v){const r=D().research.find(x=>x.id===id);r[k]=v;r.updated=Lab.today();Lab.save();if(k==='stage')render()}
+function newResearch(){const t=prompt('研究テーマは？');if(!t)return;const tg=(prompt('タグ（スペース区切り）','')||'').split(/\s+/).filter(Boolean);D().research.unshift({id:Lab.uid(),title:t,stage:'仮説',tags:tg,updated:Lab.today(),hypothesis:'',survey:'',experiment:'',conclusion:''});Lab.save();render()}
+function addLog(){const s=ls.value,m=+lm.value||0;D().logs.unshift({id:Lab.uid(),date:Lab.today(),skill:s,minutes:m,note:ln.value});const k=D().skills.find(x=>x.id===s);k.level=Math.min(100,k.level+1);Lab.save();render()}
+function addPoint(id){const t=document.getElementById('t-'+id).value,v=document.getElementById('v-'+id).value;if(!t||v==='')return;const s=D().series.find(x=>x.id===id);s.points.push([t,+v]);s.points.sort((a,b)=>a[0]<b[0]?-1:1);Lab.save();render()}
+function newSeries(){if(!nt.value)return;D().series.push({id:Lab.uid(),title:nt.value,unit:nu.value,source:'自分で記録',tags:[],points:[]});Lab.save();render()}
+function addVision(){if(!vt.value)return;D().visions.push({id:Lab.uid(),when:vw.value||'いつか',text:vt.value});Lab.save();render()}
+addEventListener('hashchange',render);render();
+</script>
+</body></html>
