@@ -15,6 +15,10 @@ create table if not exists public.records (
 
 create index if not exists records_user_updated on public.records (user_id, updated_at desc);
 
+-- ログインした人だけが API からこの表を使えるようにする（中身は下の RLS で本人の行だけに絞る）
+revoke all on public.records from anon;
+grant select, insert, update, delete on public.records to authenticated;
+
 -- 自分のデータは自分しか読めない・書けない
 alter table public.records enable row level security;
 
