@@ -64,6 +64,19 @@ class SupabaseAdapter {
     const { error } = await this.sb.from("records").update({ deleted: true, updated_at: now() }).eq("id", id);
     if (error) throw error;
   }
+  async uploadImage(blob) {
+    const { data: u } = await this.sb.auth.getUser();
+    const ext = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
+    const path = `${u.user.id}/${uid()}.${ext}`;
+    const { error } = await this.sb.storage.from("images").upload(path, blob, { contentType: blob.type, upsert: false });
+    if (error) throw new Error(/not found|bucket/i.test(error.message) ? "画像の置き場がまだ準備されていないよ（storage.sql を実行してね）" : error.message);
+    return "sb:" + path;
+  }
+  async signImages(paths) {
+    const { data, error } = await this.sb.storage.from("images").createSignedUrls(paths, 60 * 60 * 24 * 7);
+    if (error) throw error;
+    return data;
+  }
   listen(onRow) {
     this.channel = this.sb.channel("records-sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "records" }, p => onRow(p.new && p.new.id ? p.new : null))
@@ -142,6 +155,24 @@ export const Store = {
       this.emit({ error: e.message || String(e) });
       return false;
     }
+  },
+
+  /* ---------- 画像 ---------- */
+  imgCache: new Map(),
+  async uploadImage(blob) {
+    if (this.adapter.name === "cloud") return this.adapter.uploadImage(blob);
+    return await new Promise((ok, ng) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = ng; r.readAsDataURL(blob); });
+  },
+  // "sb:パス" を表示用のURLに変える（署名つきURLは1週間有効なのでまとめて取ってためておく）
+  async resolveImages(refs) {
+    const need = [...new Set(refs)].filter(r => r.startsWith("sb:") && !this.imgCache.has(r));
+    if (need.length && this.adapter.name === "cloud") {
+      try {
+        const res = await this.adapter.signImages(need.map(r => r.slice(3)));
+        res.forEach(x => { if (x.signedUrl) this.imgCache.set("sb:" + x.path, x.signedUrl); });
+      } catch {}
+    }
+    return refs.map(r => r.startsWith("sb:") ? this.imgCache.get(r) || "" : r);
   },
 
   exportAll() { return JSON.stringify({ app: "future-lab", version: 3, records: [...this.records.values()] }, null, 1); },

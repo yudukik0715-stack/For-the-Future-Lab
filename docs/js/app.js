@@ -49,7 +49,7 @@ const TEMPLATES = [
 ];
 function createFromTemplate(t) {
   const fields = t.fields.map(([name, kind, options]) => ({ id: uid("f-"), name, kind, options: options || [] }));
-  const views = [{ id: uid("v-"), name: "表", kind: "table" }, { id: uid("v-"), name: "カード", kind: "cards" }];
+  const views = [{ id: uid("v-"), name: "ギャラリー", kind: "gallery" }, { id: uid("v-"), name: "表", kind: "table" }];
   const sel = fields.find(f => f.kind === "select");
   if (sel) views.push({ id: uid("v-"), name: "ボード", kind: "board", group: sel.id });
   return newType({ name: t.name, icon: t.icon, color: t.color, fields, views, template: t.body || "" });
@@ -66,7 +66,8 @@ function md(src) {
     .replace(/(^|[^*])\*([^*]+)\*/g, "$1<i>$2</i>")
     .replace(/==(.+?)==/g, "<mark>$1</mark>")
     .replace(/\[\[([^\]]+)\]\]/g, (_, t) => { const r = findByTitle(t.replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">")); return `<a class="wl${r ? "" : " missing"}" href="#item/${r ? r.id : ""}" data-wl="${t}">${t}</a>`; })
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_, alt, ref) => okRef(ref) ? `<figure>${imgTag(ref, "", alt)}${alt ? `<figcaption>${alt}</figcaption>` : ""}</figure>` : _)
+    .replace(/(^|[^!])\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '$1<a href="$3" target="_blank" rel="noopener">$2</a>');
   for (const raw of lines) {
     if (raw.startsWith("```")) { if (inCode) { html += `<pre><code>${code}</code></pre>`; code = ""; inCode = false; } else { close(); inCode = true; } continue; }
     if (inCode) { code += raw + "\n"; continue; }
@@ -85,6 +86,60 @@ function md(src) {
   close();
   return html;
 }
+
+/* ================= 画像 ================= */
+const okRef = r => /^(sb:[\w\-./]+|https:\/\/[^\s"'<>]+|data:image\/[a-z+]+;base64,[A-Za-z0-9+/=]+)$/.test(r || "");
+// 画像は data-ref に入れておき、描いたあとで本物のURLに差し替える
+function imgTag(ref, cls = "", alt = "") {
+  if (!okRef(ref)) return "";
+  return `<img class="${cls}" alt="${esc(alt)}" loading="lazy" decoding="async" data-ref="${esc(ref)}"${ref.startsWith("sb:") ? "" : ` src="${esc(ref)}"`}>`;
+}
+async function hydrate(el = document) {
+  const imgs = [...el.querySelectorAll("img[data-ref^='sb:']:not([src])")];
+  if (!imgs.length) return;
+  const urls = await Store.resolveImages(imgs.map(i => i.dataset.ref));
+  imgs.forEach((im, k) => { if (urls[k]) im.src = urls[k]; else im.classList.add("broken"); });
+}
+// 写真を小さくしてから送る（長い辺1600px）
+async function shrink(file) {
+  if (!/^image\//.test(file.type) || file.type === "image/gif") return file;
+  const bmp = await createImageBitmap(file).catch(() => null);
+  if (!bmp) return file;
+  const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  const webp = await new Promise(r => c.toBlob(r, "image/webp", .85));
+  if (webp && webp.type === "image/webp") return webp;
+  return await new Promise(r => c.toBlob(r, "image/jpeg", .85));
+}
+async function uploadFile(file) {
+  toast("画像を送っています…");
+  const ref = await Store.uploadImage(await shrink(file));
+  toast("画像を入れました");
+  return ref;
+}
+// 写真を選ぶ／URLを貼る ダイアログ。選んだ画像の参照を返す（やめたら null）
+function pickImage(title = "画像を選ぶ", allowRemove = false) {
+  return new Promise(resolve => {
+    let done = false; const finish = v => { if (!done) { done = true; resolve(v); } };
+    dialog(title, `
+      <label class="btn" for="pickFile" style="width:100%;justify-content:center;cursor:pointer">📷 写真やファイルから選ぶ</label>
+      <input type="file" id="pickFile" accept="image/*" hidden>
+      <div class="muted" style="margin:14px 0 6px">または、画像のURLを貼る</div>
+      <form class="row" id="pickUrlF" style="flex-wrap:nowrap"><input id="pickUrl" type="url" inputmode="url" placeholder="https://…"><button class="btn ghost">使う</button></form>
+      ${allowRemove ? `<button class="btn danger sm" id="pickRemove" style="margin-top:16px">画像を外す</button>` : ""}
+      <p class="muted" id="pickMsg" role="status"></p>`, (o, close) => {
+      const end = v => { finish(v); close(); };
+      o.addEventListener("click", e => { if (e.target === o || e.target.closest("[data-close]")) finish(null); });
+      $("#pickFile", o).onchange = async e => { const f = e.target.files[0]; if (!f) return; $("#pickMsg", o).textContent = "送っています…"; try { end(await uploadFile(f)); } catch (err) { $("#pickMsg", o).textContent = "入れられませんでした：" + (err.message || err); } };
+      $("#pickUrlF", o).onsubmit = e => { e.preventDefault(); const u = $("#pickUrl", o).value.trim(); if (!/^https:\/\//.test(u)) { $("#pickMsg", o).textContent = "https:// で始まるURLを貼ってね"; return; } end(u); };
+      const rm = $("#pickRemove", o); if (rm) rm.onclick = () => end("");
+    });
+  });
+}
+const firstImage = body => { const m = (body || "").match(/!\[[^\]]*\]\(([^)\s]+)\)/); return m && okRef(m[1]) ? m[1] : ""; };
+const coverOf = i => i.data.cover || firstImage(i.data.body);
+const plain = b => (b || "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/[#*>\-\[\]=`]/g, "");
 
 /* ================= 画面の骨組み ================= */
 const root = $("#root");
@@ -152,48 +207,65 @@ function render() {
   v.className = "page" + (r.name === "type" ? " wide" : "");
   const views = { home: viewHome, pages: viewPages, settings: viewSettings, type: viewType, item: viewItem };
   views[r.name](v, r.id);
+  hydrate(v);
   $("#main").scrollTo(0, 0);
   navOpts = {};
 }
 
 /* ================= ホーム ================= */
+const ws = () => Store.get("setting-ws")?.data || {};
+const saveWs = patch => Store.put("setting", "setting-ws", { ...ws(), ...patch });
 function viewHome(v) {
   $("#crumbs").textContent = "";
   const hr = new Date().getHours();
   const greet = hr < 5 ? "夜ふかしだね" : hr < 11 ? "おはよう" : hr < 18 ? "こんにちは" : "おつかれさま";
   const recent = items().sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 8);
   const pinned = items().filter(i => i.data.pinned);
-  const t = types();
+  const t = types(), cover = ws().cover;
   v.innerHTML = `
-    <div class="muted">${new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "long" })}</div>
-    <h1>${greet}。</h1>
-    <form class="capture" id="capture"><input id="capIn" placeholder="思いついたことを書いて Enter（ページになる）" autocomplete="off" enterkeyhint="done"><button class="btn">追加</button></form>
-    <div class="hint">本文の中で [[ページ名]] と書くと、ページどうしがつながるよ。</div>
+    <section class="hero ${cover ? "has-img" : ""}">
+      ${cover ? imgTag(cover, "hero-img") : ""}
+      <div class="hero-in">
+        <div class="eyebrow">${new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "long" })}</div>
+        <h1>${greet}。</h1>
+        <form class="capture" id="capture"><input id="capIn" placeholder="思いついたことを書いて Enter" autocomplete="off" enterkeyhint="done" aria-label="新しいページのタイトル"><button class="btn">追加</button></form>
+      </div>
+      <button class="chipbtn hero-edit" id="heroCover">🖼 ${cover ? "カバーを変える" : "カバー画像をつける"}</button>
+    </section>
 
-    ${pinned.length ? `<h2>📌 ピン留め</h2><div class="grid">${pinned.map(cardHtml).join("")}</div>` : ""}
+    ${pinned.length ? `<h2>ピン留め</h2><div class="gallery">${pinned.map(galleryCard).join("")}</div>` : ""}
 
     <h2>部屋</h2>
-    ${t.length ? `<div class="grid">${t.map(x => `<a class="card" href="#type/${x.id}" style="text-decoration:none;color:var(--ink)"><div style="font-size:22px">${esc(x.data.icon)}</div><b>${esc(x.data.name)}</b><div class="muted">${itemsOf(x.id).length} 件</div></a>`).join("")}<button class="card" id="homeAddType" style="text-align:left;color:var(--sub)"><div style="font-size:22px">＋</div><b>新しい部屋</b><div class="muted">論文、研究、統計…なんでも</div></button></div>`
+    ${t.length ? `<div class="rooms">${t.map(x => `<a class="room" href="#type/${x.id}">
+        <div class="room-cover">${x.data.cover ? imgTag(x.data.cover) : `<span class="room-emoji">${esc(x.data.icon)}</span>`}</div>
+        <div class="room-meta"><b>${x.data.cover ? esc(x.data.icon) + " " : ""}${esc(x.data.name)}</b><span class="muted">${itemsOf(x.id).length} 件</span></div></a>`).join("")}
+        <button class="room add" id="homeAddType"><div class="room-cover"><span class="room-emoji">＋</span></div><div class="room-meta"><b>新しい部屋</b><span class="muted">なんでも作れる</span></div></button></div>`
       : `<div class="empty">まだ空っぽ。ここから自分の部屋を作っていこう。<div style="margin-top:12px"><button class="btn" id="homeAddType">＋ 空の部屋をつくる</button></div></div>`}
 
     <h2>最近ひらいたもの</h2>
-    ${recent.length ? recent.map(rowHtml).join("") : `<div class="muted">まだページはありません。上の入力欄に書いてみてね。</div>`}
+    ${recent.length ? `<div class="gallery">${recent.map(galleryCard).join("")}</div>` : `<div class="muted">まだページはありません。上の入力欄に書いてみてね。</div>`}
 
     <h2>ひな形から始める <span class="muted" style="font-weight:400">（使わなくてもOK）</span></h2>
-    <p class="muted" style="margin-top:-4px">項目の形だけ用意した部屋ができるよ。中身は空っぽで、あとから項目は自由に変えられる。</p>
+    <p class="muted" style="margin-top:-4px">項目の形だけ用意した部屋ができるよ。中身は空っぽで、あとから自由に変えられる。</p>
     <div class="tplgrid">${TEMPLATES.map((x, i) => `<button class="tpl" data-tpl="${i}"><b>${x.icon} ${esc(x.name)}</b><span class="muted">${esc(x.desc)}</span></button>`).join("")}</div>`;
   $("#capture").onsubmit = e => { e.preventDefault(); const t = $("#capIn").value.trim(); if (!t) return; const id = newItem(null, t); $("#capIn").value = ""; toast("ページを作りました"); go("item/" + id); };
+  $("#heroCover").onclick = async () => { const r = await pickImage("ホームのカバー画像", Boolean(cover)); if (r === null) return; saveWs({ cover: r }); render(); };
   const ha = $("#homeAddType"); if (ha) ha.onclick = () => { const id = newType({}); go("type/" + id); setTimeout(() => editTypeDialog(id, true), 50); };
   v.querySelectorAll("[data-tpl]").forEach(b => b.onclick = () => { const id = createFromTemplate(TEMPLATES[+b.dataset.tpl]); toast("部屋を作りました"); go("type/" + id); });
 }
 function rowHtml(i) {
   const t = i.data.type ? Store.get(i.data.type) : null;
-  return `<a class="list-row" href="#item/${i.id}"><span>${esc(t?.data.icon || "📄")}</span><span class="t">${esc(titleOf(i))}</span><span class="muted">${esc(t?.data.name || "ページ")}・${fmtDate(i.updated_at)}</span></a>`;
+  return `<a class="list-row" href="#item/${i.id}"><span>${esc(i.data.icon || t?.data.icon || "📄")}</span><span class="t">${esc(titleOf(i))}</span><span class="muted">${esc(t?.data.name || "ページ")}・${fmtDate(i.updated_at)}</span></a>`;
 }
-function cardHtml(i) {
-  const t = i.data.type ? Store.get(i.data.type) : null;
-  return `<a class="card" href="#item/${i.id}" style="text-decoration:none;color:var(--ink)"><b>${esc(t?.data.icon || "📄")} ${esc(titleOf(i))}</b><div class="excerpt">${esc((i.data.body || "").replace(/[#*>\-\[\]=`]/g, "").slice(0, 160))}</div></a>`;
+function galleryCard(i, fields = []) {
+  const t = i.data.type ? Store.get(i.data.type) : null, c = coverOf(i);
+  return `<a class="gcard" href="#item/${i.id}">
+    <div class="gcover">${c ? imgTag(c) : `<span class="room-emoji">${esc(i.data.icon || t?.data.icon || "📄")}</span>`}</div>
+    <div class="gbody"><b>${c && (i.data.icon || t) ? esc(i.data.icon || t.data.icon) + " " : ""}${esc(titleOf(i))}</b>
+      ${fields.length ? `<div class="row" style="gap:4px">${fields.slice(0, 3).map(f => propChip(f, i.data.props?.[f.id])).join("")}</div>` : `<span class="muted">${esc(t?.data.name || "ページ")}・${fmtDate(i.updated_at)}</span>`}
+      ${c ? "" : `<div class="excerpt">${esc(plain(i.data.body).slice(0, 90))}</div>`}</div></a>`;
 }
+const cardHtml = i => galleryCard(i);
 
 /* ================= ページ一覧（種類なし） ================= */
 function viewPages(v) {
@@ -215,9 +287,10 @@ function viewType(v, id) {
   st.view = view.id;
   $("#crumbs").innerHTML = `<a href="#">ホーム</a> / ${esc(d.name)}`;
   v.innerHTML = `
-    <div class="row"><h1 class="sp" style="min-width:0">${esc(d.icon)} ${esc(d.name)}</h1>
-      <button class="btn ghost sm" id="editType">項目と見た目を編集</button><button class="btn" id="addItem">＋ 新規</button></div>
-    <div class="tabs" role="tablist">${d.views.map(x => `<button role="tab" class="${x.id === view.id ? "on" : ""}" data-view="${x.id}">${{ table: "▦", cards: "▤", board: "▥" }[x.kind] || ""} ${esc(x.name)}</button>`).join("")}<button data-addview="1" title="見え方を追加" aria-label="見え方を追加">＋</button></div>
+    ${d.cover ? `<div class="cover">${imgTag(d.cover)}</div>` : ""}
+    <div class="row" style="${d.cover ? "margin-top:-34px;position:relative" : ""}"><h1 class="sp" style="min-width:0"><span class="page-icon">${esc(d.icon)}</span> ${esc(d.name)}</h1></div>
+    <div class="row" style="margin-top:6px"><span class="sp"></span><button class="btn ghost sm" id="typeCover">🖼 カバー</button><button class="btn ghost sm" id="editType">項目と見た目を編集</button><button class="btn" id="addItem">＋ 新規</button></div>
+    <div class="tabs" role="tablist">${d.views.map(x => `<button role="tab" class="${x.id === view.id ? "on" : ""}" data-view="${x.id}">${{ table: "▦", cards: "▤", board: "▥", gallery: "▣" }[x.kind] || ""} ${esc(x.name)}</button>`).join("")}<button data-addview="1" title="見え方を追加" aria-label="見え方を追加">＋</button></div>
     <div class="toolbar"><input type="search" id="q" placeholder="この部屋を絞り込む" value="${esc(st.q)}">
       ${view.kind === "board" ? `<label class="muted">分ける項目 <select id="groupBy">${d.fields.filter(f => f.kind === "select").map(f => `<option value="${f.id}" ${f.id === view.group ? "selected" : ""}>${esc(f.name)}</option>`).join("") || `<option value="">（「選択（1つ）」の項目が必要）</option>`}</select></label>` : ""}
       <span class="sp"></span><span class="muted" id="cnt"></span></div>
@@ -231,7 +304,8 @@ function viewType(v, id) {
     $("#cnt").textContent = `${list.length} 件`;
     const body = $("#viewBody");
     if (!itemsOf(id).length) { body.innerHTML = `<div class="empty">まだ何もありません。「＋ 新規」で最初の1件を作ろう。${d.fields.length ? "" : "<br>先に「項目と見た目を編集」で、記録したい項目（著者、年、状態など）を決めておくと便利だよ。"}</div>`; return; }
-    if (view.kind === "cards") body.innerHTML = `<div class="cards">${list.map(i => `<a class="card" href="#item/${i.id}"><b>${esc(titleOf(i))}</b><div class="row">${d.fields.slice(0, 3).map(f => propChip(f, i.data.props?.[f.id])).join("")}</div><div class="excerpt">${esc((i.data.body || "").replace(/[#*>\-\[\]=`]/g, "").slice(0, 140))}</div></a>`).join("")}</div>`;
+    if (view.kind === "gallery") { body.innerHTML = `<div class="gallery big">${list.map(i => galleryCard(i, d.fields)).join("")}</div>`; hydrate(body); }
+    else if (view.kind === "cards") body.innerHTML = `<div class="cards">${list.map(i => `<a class="card" href="#item/${i.id}"><b>${esc(i.data.icon ? i.data.icon + " " : "")}${esc(titleOf(i))}</b><div class="row">${d.fields.slice(0, 3).map(f => propChip(f, i.data.props?.[f.id])).join("")}</div><div class="excerpt">${esc(plain(i.data.body).slice(0, 140))}</div></a>`).join("")}</div>`;
     else if (view.kind === "board") {
       const g = d.fields.find(f => f.id === view.group && f.kind === "select");
       if (!g) { body.innerHTML = `<div class="empty">ボードで分けるには「選択（1つ）」の項目が必要だよ。「項目と見た目を編集」から追加してね。</div>`; return; }
@@ -250,6 +324,7 @@ function viewType(v, id) {
   const gb = $("#groupBy"); if (gb) gb.onchange = e => { view.group = e.target.value; saveType(t, { views: d.views }); draw(); };
   $("#addItem").onclick = () => go("item/" + newItem(id, "", {}), { focusTitle: true });
   $("#editType").onclick = () => editTypeDialog(id);
+  $("#typeCover").onclick = async () => { const r = await pickImage("部屋のカバー画像", Boolean(d.cover)); if (r === null) return; saveType(Store.get(id), { cover: r }); render(); };
   v.querySelectorAll("[data-view]").forEach(b => b.onclick = () => { st.view = b.dataset.view; viewType(v, id); });
   v.querySelector("[data-addview]").onclick = () => addViewDialog(id);
 }
@@ -334,9 +409,9 @@ function editTypeDialog(id, isNew = false) {
 }
 function addViewDialog(id) {
   const t = Store.get(id);
-  dialog("見え方を追加", `<div class="tplgrid">${[["table", "▦ 表", "表計算のように一覧"], ["cards", "▤ カード", "本文の一部も見える"], ["board", "▥ ボード", "状態ごとに列で並べる"]].map(([k, n, s]) => `<button class="tpl" data-k="${k}"><b>${n}</b><span class="muted">${s}</span></button>`).join("")}</div>`,
+  dialog("見え方を追加", `<div class="tplgrid">${[["gallery", "▣ ギャラリー", "画像つきの大きなカード"], ["table", "▦ 表", "表計算のように一覧"], ["cards", "▤ カード", "本文の一部も見える"], ["board", "▥ ボード", "状態ごとに列で並べる"]].map(([k, n, s]) => `<button class="tpl" data-k="${k}"><b>${n}</b><span class="muted">${s}</span></button>`).join("")}</div>`,
     (o, close) => o.querySelectorAll("[data-k]").forEach(b => b.onclick = () => {
-      const k = b.dataset.k, vw = { id: uid("v-"), name: { table: "表", cards: "カード", board: "ボード" }[k], kind: k };
+      const k = b.dataset.k, vw = { id: uid("v-"), name: { table: "表", cards: "カード", board: "ボード", gallery: "ギャラリー" }[k], kind: k };
       if (k === "board") vw.group = t.data.fields.find(f => f.kind === "select")?.id || "";
       saveType(t, { views: [...t.data.views, vw] }); (typeUI[id] ||= {}).view = vw.id; close(); render();
     }));
@@ -347,15 +422,21 @@ function viewItem(v, id) {
   const rec = Store.get(id), d = rec.data, t = d.type ? Store.get(d.type) : null;
   const fields = t?.data.fields || [];
   if (!d.body && t?.data.template && !d.created_tpl) { d.body = t.data.template; d.created_tpl = true; saveItem(rec, { body: d.body, created_tpl: true }); }
-  const mode = navOpts.focusTitle || !d.body ? "write" : prefs.get("mode-" + id, "read");
+  const untouched = !d.body || d.body === t?.data.template;
+  const mode = navOpts.focusTitle ? "write" : prefs.get("mode-" + id, untouched ? "write" : "read");
   $("#crumbs").innerHTML = `<a href="#">ホーム</a> / ${t ? `<a href="#type/${t.id}">${esc(t.data.name)}</a>` : `<a href="#pages">ページ</a>`} / ${esc(titleOf(rec))}`;
   v.innerHTML = `
+    ${d.cover ? `<div class="cover">${imgTag(d.cover)}</div>` : ""}
+    <div class="row muted" style="font-size:13px;${d.cover ? "margin-top:-30px;position:relative" : ""}">
+      <button class="page-icon big" id="iconBtn" aria-label="アイコンを変える" title="アイコンを変える">${esc(d.icon || t?.data.icon || "📄")}</button>
+      <span class="sp"></span>
+      <button class="chipbtn" id="coverBtn">🖼 ${d.cover ? "カバーを変える" : "カバーをつける"}</button></div>
     <div class="row muted" style="font-size:13px">
       <select id="moveType" style="width:auto;border:0;padding:2px 4px;color:var(--sub)" aria-label="入れる部屋">${[`<option value="">📄 ページ（部屋なし）</option>`, ...types().map(x => `<option value="${x.id}" ${x.id === d.type ? "selected" : ""}>${esc(x.data.icon)} ${esc(x.data.name)}</option>`)].join("")}</select>
       <span class="sp"></span><button class="btn ghost sm" id="pin">${d.pinned ? "📌 ピン留め中" : "📌 ピン留め"}</button></div>
     <input class="title-input" id="title" value="${esc(d.title)}" placeholder="無題" aria-label="タイトル">
     ${fields.length ? `<div class="props">${fields.map(f => `<div class="k" title="${esc(f.name)}">${esc(f.name)}</div><div>${propEditor(f, d.props?.[f.id])}</div>`).join("")}</div>` : t ? `<div class="hint" style="margin:6px 0 14px">この部屋にはまだ項目がありません。<a href="#type/${t.id}">部屋の画面</a>の「項目と見た目を編集」で追加できるよ。</div>` : `<div style="height:12px"></div>`}
-    <div class="editor-tabs"><button data-mode="write" class="${mode === "write" ? "on" : ""}">書く</button><button data-mode="read" class="${mode === "read" ? "on" : ""}">読む</button><span class="sp"></span><span class="muted" id="saveState"></span></div>
+    <div class="editor-tabs"><button data-mode="write" class="${mode === "write" ? "on" : ""}">書く</button><button data-mode="read" class="${mode === "read" ? "on" : ""}">読む</button><button id="insImg" title="本文に画像を入れる">🖼 画像を入れる</button><span class="sp"></span><span class="muted" id="saveState"></span></div>
     <textarea class="body" id="body" placeholder="ここに書く。&#10;# 見出し　- 箇条書き　**太字**　==マーカー==　[[ほかのページ]]" ${mode === "write" ? "" : "hidden"}>${esc(d.body)}</textarea>
     <div class="md" id="preview" ${mode === "read" ? "" : "hidden"}>${md(d.body) || `<p class="muted">まだ本文はありません。「書く」から書けるよ。</p>`}</div>
     <div class="backlinks" id="backlinks"></div>
@@ -363,6 +444,29 @@ function viewItem(v, id) {
 
   const cur = () => Store.get(id);
   const saveState = (s) => { const el = $("#saveState"); if (el) el.textContent = s; };
+  const insertAtCursor = text => {
+    const ta = $("#body"); const a = ta.selectionStart ?? ta.value.length, b = ta.selectionEnd ?? a;
+    ta.value = ta.value.slice(0, a) + text + ta.value.slice(b); ta.selectionStart = ta.selectionEnd = a + text.length;
+    saveItem(cur(), { body: ta.value }); saveState("保存しました");
+  };
+  const typed = () => ({ title: $("#title").value, body: $("#body").value }); // 入力中の文字を先に保存してから描き直す
+  $("#coverBtn").onclick = async () => { const r = await pickImage("カバー画像", Boolean(cur().data.cover)); if (r === null) return; saveItem(cur(), { ...typed(), cover: r }); render(); };
+  $("#iconBtn").onclick = () => dialog("アイコン", `<p class="muted">絵文字を1つ入れてね（iPad の絵文字キーボードが使えるよ）</p><form class="row" id="icF" style="flex-wrap:nowrap"><input id="icIn" value="${esc(cur().data.icon || "")}" maxlength="4" style="font-size:28px;text-align:center;width:90px"><button class="btn">決める</button><button type="button" class="btn ghost" id="icClr">外す</button></form>`, (o, close) => {
+    $("#icF", o).onsubmit = e => { e.preventDefault(); saveItem(cur(), { ...typed(), icon: $("#icIn", o).value.trim() }); close(); render(); };
+    $("#icClr", o).onclick = () => { saveItem(cur(), { ...typed(), icon: "" }); close(); render(); };
+    setTimeout(() => $("#icIn", o).select(), 30);
+  });
+  $("#insImg").onclick = async () => {
+    const ta = $("#body"), pos = [ta.selectionStart, ta.selectionEnd];
+    const r = await pickImage("本文に画像を入れる"); if (!r) return;
+    if ($("#body").hidden) setMode("write");
+    ta.selectionStart = pos[0] ?? ta.value.length; ta.selectionEnd = pos[1] ?? ta.value.length;
+    insertAtCursor(`\n![](${r})\n`); if (prefs.get("mode-" + id) === "read") setMode("read");
+  };
+  $("#body").addEventListener("paste", async e => {
+    const f = [...(e.clipboardData?.files || [])].find(x => x.type.startsWith("image/")); if (!f) return;
+    e.preventDefault(); try { insertAtCursor(`\n![](${await uploadFile(f)})\n`); } catch (err) { toast("画像を入れられませんでした：" + (err.message || err)); }
+  });
   const saveBody = debounce(() => { saveItem(cur(), { body: $("#body").value }); saveState("保存しました"); }, 600);
   const saveTitle = debounce(() => { saveItem(cur(), { title: $("#title").value }); saveState("保存しました"); renderSide(); $("#crumbs").lastChild.textContent = " / " + ($("#title").value.trim() || "無題"); }, 500);
   $("#title").oninput = () => { saveState("…"); saveTitle(); };
@@ -372,7 +476,7 @@ function viewItem(v, id) {
     prefs.set("mode-" + id, m);
     $("#body").hidden = m !== "write"; $("#preview").hidden = m !== "read";
     v.querySelectorAll("[data-mode]").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
-    if (m === "read") $("#preview").innerHTML = md($("#body").value) || `<p class="muted">まだ本文はありません。「書く」から書けるよ。</p>`;
+    if (m === "read") { $("#preview").innerHTML = md($("#body").value) || `<p class="muted">まだ本文はありません。「書く」から書けるよ。</p>`; hydrate($("#preview")); }
   };
   v.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setMode(b.dataset.mode));
   $("#preview").addEventListener("click", e => {
@@ -380,8 +484,8 @@ function viewItem(v, id) {
     e.preventDefault(); const nid = newItem(null, a.dataset.wl); toast("新しいページを作りました"); go("item/" + nid);
   });
   bindPropEditors(v, fields, () => cur(), saveState);
-  $("#moveType").onchange = e => { saveItem(cur(), { type: e.target.value || null }); toast("移しました"); render(); };
-  $("#pin").onclick = () => { saveItem(cur(), { pinned: !cur().data.pinned }); render(); };
+  $("#moveType").onchange = e => { saveItem(cur(), { ...typed(), type: e.target.value || null }); toast("移しました"); render(); };
+  $("#pin").onclick = () => { saveItem(cur(), { ...typed(), pinned: !cur().data.pinned }); render(); };
   const del = $("#delItem");
   del.onclick = () => { if (!del.dataset.arm) { del.dataset.arm = 1; del.textContent = "もう一度押すと削除"; return; } Store.remove(id); toast("削除しました"); go(t ? "type/" + t.id : "pages"); };
   drawBacklinks(id);
@@ -475,7 +579,9 @@ function viewSettings(v) {
     <h2>ワークスペース</h2>
     <div class="card"><label class="muted" for="wsName">名前</label><input id="wsName" value="${esc(wsName())}">
       <label class="muted" for="theme" style="display:block;margin-top:10px">見た目</label>
-      <select id="theme" style="width:auto"><option value="system" ${theme === "system" ? "selected" : ""}>端末に合わせる</option><option value="light" ${theme === "light" ? "selected" : ""}>ライト</option><option value="dark" ${theme === "dark" ? "selected" : ""}>ダーク</option></select></div>
+      <select id="theme" style="width:auto"><option value="system" ${theme === "system" ? "selected" : ""}>端末に合わせる</option><option value="light" ${theme === "light" ? "selected" : ""}>ライト（白とシルバー）</option><option value="dark" ${theme === "dark" ? "selected" : ""}>ダーク（グラファイト）</option></select>
+      <div class="muted" style="margin-top:12px">フォント（どの端末でも同じになるよ）</div>
+      <div class="fontpick">${Object.entries(FONTS).map(([k, f]) => `<button class="${(ws().font || "maru") === k ? "on" : ""}" data-font="${k}" style="font-family:${f.css}"><b>${f.label}</b><span>知識の部屋 Aa 123</span></button>`).join("")}</div></div>
     <h2>同期</h2>
     <div class="card">${cloud
       ? `<p>✅ 同期オン：<b id="me"></b> でログイン中。iPad と iPhone で同じメアドでログインすると、同じデータが見られるよ。</p><button class="btn ghost sm" id="signOut">ログアウト</button>`
@@ -484,11 +590,23 @@ function viewSettings(v) {
     <div class="card"><p>全部のデータを1つのファイルに書き出したり、書き出したファイルから戻したりできるよ。</p>
       <div class="row"><button class="btn" id="exp">書き出す</button><label class="btn ghost" for="imp" style="cursor:pointer">読み込む</label><input type="file" id="imp" accept=".json,application/json" hidden></div>
       <div class="muted" style="margin-top:8px">部屋 ${types().length}・ページ ${items().length}</div></div>`;
-  $("#wsName").onchange = e => { Store.put("setting", "setting-ws", { name: e.target.value.trim() || "For the Future Lab" }); renderSide(); toast("保存しました"); };
+  $("#wsName").onchange = e => { saveWs({ name: e.target.value.trim() || "For the Future Lab" }); renderSide(); toast("保存しました"); };
   $("#theme").onchange = e => { prefs.set("theme", e.target.value); applyTheme(); };
+  v.querySelectorAll("[data-font]").forEach(b => b.onclick = () => { saveWs({ font: b.dataset.font }); applyFont(); render(); });
   $("#exp").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([Store.exportAll()], { type: "application/json" })); a.download = `future-lab-${today()}.json`; document.body.appendChild(a); a.click(); a.remove(); };
   $("#imp").onchange = async e => { const f = e.target.files[0]; if (!f) return; try { await Store.importAll(await f.text()); toast("読み込みました"); render(); } catch (err) { toast("読み込めませんでした：" + err.message); } };
   if (cloud) { Store.adapter.session().then(s => { const el = $("#me"); if (el) el.textContent = s?.user?.email || ""; }); $("#signOut").onclick = async () => { await Store.adapter.signOut(); location.reload(); }; }
+}
+const FONTS = {
+  maru: { label: "まるゴシック", css: '"Zen Maru Gothic", "Hiragino Maru Gothic ProN", var(--f-sys)', href: "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" },
+  kiwi: { label: "ころころ", css: '"Kiwi Maru", "Hiragino Maru Gothic ProN", var(--f-sys)', href: "https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&display=swap" },
+  sans: { label: "すっきり", css: "var(--f-sys)", href: "" },
+  mincho: { label: "明朝", css: '"Shippori Mincho", "Hiragino Mincho ProN", serif', href: "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;700&display=swap" },
+};
+function applyFont() {
+  const f = FONTS[ws().font] || FONTS.maru;
+  document.documentElement.style.setProperty("--f-body", f.css);
+  if (f.href && !document.querySelector(`link[href="${f.href}"]`)) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = f.href; document.head.appendChild(l); }
 }
 function applyTheme() { const t = prefs.get("theme", "system"); if (t === "system") document.documentElement.removeAttribute("data-theme"); else document.documentElement.dataset.theme = t; }
 
@@ -536,7 +654,7 @@ function viewNewPassword() {
 
 /* ================= 起動 ================= */
 function start() {
-  shell(); render();
+  applyFont(); shell(); render();
   Store.on(msg => {
     if (msg === "remote") {
       renderSide();

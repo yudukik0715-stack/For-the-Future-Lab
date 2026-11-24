@@ -12,6 +12,8 @@
 - **つながり**：本文に `[[ページ名]]` と書くとリンクになり、相手のページに「参照しているページ」が出る
 - **検索**：🔍 か ⌘K / Ctrl+K
 - **ひな形**：研究テーマ、論文・本、統計、学習ログ、アイデア、未来の構想（使わなくてもいい）
+- **画像**：ホーム・部屋・ページにカバー画像、本文に画像（写真を選ぶ／貼り付け／URL）。ギャラリー表示で画像カードとして並ぶ
+- **見た目**：白とシルバー（ダークはグラファイト）。フォントは設定で「まるゴシック／ころころ／すっきり／明朝」から選べる
 - **バックアップ**：設定 → 書き出す／読み込む
 
 ### 構成
@@ -27,7 +29,7 @@
 ## iPad と iPhone で同期する（Supabase）
 
 1. supabase.com でプロジェクトを作る（リージョンは Tokyo）
-2. SQL Editor に `supabase/schema.sql` を貼って Run
+2. SQL Editor に `supabase/schema.sql` を貼って Run。画像を使うなら `supabase/storage.sql` も同じように Run
 3. Authentication → URL Configuration の Site URL に公開URL（`https://yudukik0715-stack.github.io/For-the-Future-Lab/`）を入れる
 4. Project URL と anon / publishable key を `docs/js/config.js` に書く（service_role / secret key は書かない）
 
