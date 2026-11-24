@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -227,6 +228,9 @@ textarea.body{min-height:46vh;font-size:16px;line-height:1.9;border:1px solid va
 </head>
 <body>
 <div id="root"></div>
-<script type="module" src="js/app.js"></script>
+<script type="module">
+// 更新がすぐ届くように、毎回いちばん新しいプログラムを読み込む
+import("./js/app.js?v=" + Date.now());
+</script>
 </body>
 </html>

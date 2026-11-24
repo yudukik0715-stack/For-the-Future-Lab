@@ -1,5 +1,5 @@
 // データ層。画面側は Store だけを触り、保存先（端末内 / Supabase）は意識しない。
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import("./config.js" + new URL(import.meta.url).search);
 
 const LOCAL_KEY = "future-lab-v3";
 const ls = {

@@ -1,5 +1,6 @@
 // For the Future Lab — 空っぽから自分で育てる知識の部屋
-import { Store, uid, now } from "./store.js";
+const V = new URL(import.meta.url).search; // 読み込みのたびに同じ番号を下のファイルにも付ける
+const { Store, uid, now } = await import("./store.js" + V);
 
 /* ================= 小道具 ================= */
 const $ = (s, el = document) => el.querySelector(s);
