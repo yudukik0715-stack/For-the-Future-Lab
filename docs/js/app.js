@@ -141,6 +141,47 @@ const firstImage = body => { const m = (body || "").match(/!\[[^\]]*\]\(([^)\s]+
 const coverOf = i => i.data.cover || firstImage(i.data.body);
 const plain = b => (b || "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/[#*>\-\[\]=`]/g, "");
 
+/* ================= 題名の色 ================= */
+const GRADS = {
+  silver: { label: "シルバー", css: "linear-gradient(180deg,#f7f7fa 0%,#b8bcc6 45%,#6e737d 100%)" },
+  chrome: { label: "クローム", css: "linear-gradient(180deg,#1d1d1f 0%,#8a8f99 50%,#1d1d1f 100%)" },
+  gold: { label: "ゴールド", css: "linear-gradient(180deg,#fff3c4 0%,#d9a93b 50%,#8a5a12 100%)" },
+  rose: { label: "ローズ", css: "linear-gradient(120deg,#ffb6c9,#e86a92 60%,#b23a66)" },
+  sky: { label: "空", css: "linear-gradient(120deg,#7cc6ff,#3b7ddd 60%,#6a5ae0)" },
+  mint: { label: "ミント", css: "linear-gradient(120deg,#a8f0d1,#2fb38a 60%,#1f7a8c)" },
+  sunset: { label: "夕焼け", css: "linear-gradient(120deg,#ffcf6b,#ff7a59 55%,#c2417a)" },
+};
+const SOLIDS = ["#1d1d1f", "#6e6e73", "#ffffff", "#0071e3", "#5e5ce6", "#bf5af2", "#ff375f", "#ff9f0a", "#30b158", "#00a3bf"];
+// 題名の色を style 属性用の文字列にする（グラデーションは文字の形に切り抜く）
+function titleStyle(v) {
+  if (!v) return "";
+  if (v.startsWith("grad:") && GRADS[v.slice(5)]) return `background-image:${GRADS[v.slice(5)].css};-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--ink)`;
+  if (/^#[0-9a-f]{3,8}$/i.test(v)) return `color:${v};-webkit-text-fill-color:${v}`;
+  return "";
+}
+function pickColor(title, current) {
+  return new Promise(resolve => {
+    let done = false; const fin = v => { if (!done) { done = true; resolve(v); } };
+    const sw = (v, label, bg) => `<button class="swatch ${current === v ? "on" : ""}" data-c="${v}" title="${label}" aria-label="${label}" style="background:${bg}"></button>`;
+    dialog(title, `
+      <div class="muted">グラデーション</div>
+      <div class="swatches">${Object.entries(GRADS).map(([k, g]) => sw("grad:" + k, g.label, g.css)).join("")}</div>
+      <div class="muted" style="margin-top:12px">ふつうの色</div>
+      <div class="swatches">${SOLIDS.map(c => sw(c, c, c)).join("")}<label class="swatch custom" title="好きな色を選ぶ"><input type="color" id="cc" value="${/^#/.test(current || "") ? current : "#5e5ce6"}" aria-label="好きな色を選ぶ"></label></div>
+      <div class="preview-title" id="pv" style="${titleStyle(current)}">知識の部屋</div>
+      <div class="row" style="margin-top:14px"><button class="btn ghost sm" id="cReset">もとの色に戻す</button><span class="sp"></span><button class="btn" id="cOk">決める</button></div>`, (o, close) => {
+      let val = current || "";
+      const show = () => { $("#pv", o).setAttribute("style", titleStyle(val)); o.querySelectorAll(".swatch[data-c]").forEach(b => b.classList.toggle("on", b.dataset.c === val)); };
+      o.querySelectorAll(".swatch[data-c]").forEach(b => b.onclick = () => { val = b.dataset.c; show(); });
+      $("#cc", o).oninput = e => { val = e.target.value; show(); };
+      $("#cReset", o).onclick = () => { fin(""); close(); };
+      $("#cOk", o).onclick = () => { fin(val); close(); };
+      o.addEventListener("click", e => { if (e.target === o || e.target.closest("[data-close]")) fin(null); });
+    });
+  });
+}
+const miniTools = (coverId, colorId, hasCover) => `<span class="minitools"><button class="mini" id="${coverId}" title="${hasCover ? "カバーを変える" : "カバーをつける"}" aria-label="${hasCover ? "カバーを変える" : "カバーをつける"}">🖼</button><button class="mini" id="${colorId}" title="題名の色" aria-label="題名の色を変える"><span class="aa">Aa</span></button></span>`;
+
 /* ================= 画面の骨組み ================= */
 const root = $("#root");
 let toastT;
@@ -227,10 +268,10 @@ function viewHome(v) {
       ${cover ? imgTag(cover, "hero-img") : ""}
       <div class="hero-in">
         <div class="eyebrow">${new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "long" })}</div>
-        <h1>${greet}。</h1>
+        <h1 style="${titleStyle(ws().titleColor)}">${greet}。</h1>
         <form class="capture" id="capture"><input id="capIn" placeholder="思いついたことを書いて Enter" autocomplete="off" enterkeyhint="done" aria-label="新しいページのタイトル"><button class="btn">追加</button></form>
       </div>
-      <button class="chipbtn hero-edit" id="heroCover">🖼 ${cover ? "カバーを変える" : "カバー画像をつける"}</button>
+      <span class="hero-edit">${miniTools("heroCover", "heroColor", Boolean(cover))}</span>
     </section>
 
     ${pinned.length ? `<h2>ピン留め</h2><div class="gallery">${pinned.map(galleryCard).join("")}</div>` : ""}
@@ -249,6 +290,7 @@ function viewHome(v) {
     <p class="muted" style="margin-top:-4px">項目の形だけ用意した部屋ができるよ。中身は空っぽで、あとから自由に変えられる。</p>
     <div class="tplgrid">${TEMPLATES.map((x, i) => `<button class="tpl" data-tpl="${i}"><b>${x.icon} ${esc(x.name)}</b><span class="muted">${esc(x.desc)}</span></button>`).join("")}</div>`;
   $("#capture").onsubmit = e => { e.preventDefault(); const t = $("#capIn").value.trim(); if (!t) return; const id = newItem(null, t); $("#capIn").value = ""; toast("ページを作りました"); go("item/" + id); };
+  $("#heroColor").onclick = async () => { const c = await pickColor("あいさつの文字の色", ws().titleColor); if (c === null) return; saveWs({ titleColor: c }); render(); };
   $("#heroCover").onclick = async () => { const r = await pickImage("ホームのカバー画像", Boolean(cover)); if (r === null) return; saveWs({ cover: r }); render(); };
   const ha = $("#homeAddType"); if (ha) ha.onclick = () => { const id = newType({}); go("type/" + id); setTimeout(() => editTypeDialog(id, true), 50); };
   v.querySelectorAll("[data-tpl]").forEach(b => b.onclick = () => { const id = createFromTemplate(TEMPLATES[+b.dataset.tpl]); toast("部屋を作りました"); go("type/" + id); });
@@ -288,8 +330,8 @@ function viewType(v, id) {
   $("#crumbs").innerHTML = `<a href="#">ホーム</a> / ${esc(d.name)}`;
   v.innerHTML = `
     ${d.cover ? `<div class="cover">${imgTag(d.cover)}</div>` : ""}
-    <div class="row" style="${d.cover ? "margin-top:-34px;position:relative" : ""}"><h1 class="sp" style="min-width:0"><span class="page-icon">${esc(d.icon)}</span> ${esc(d.name)}</h1></div>
-    <div class="row" style="margin-top:6px"><span class="sp"></span><button class="btn ghost sm" id="typeCover">🖼 カバー</button><button class="btn ghost sm" id="editType">項目と見た目を編集</button><button class="btn" id="addItem">＋ 新規</button></div>
+    <div class="row" style="${d.cover ? "margin-top:-34px;position:relative" : ""}"><h1 class="sp" style="min-width:0"><span class="page-icon">${esc(d.icon)}</span> <span style="${titleStyle(d.titleColor)}">${esc(d.name)}</span></h1>${miniTools("typeCover", "typeColor", Boolean(d.cover))}</div>
+    <div class="row" style="margin-top:6px"><span class="sp"></span><button class="btn ghost sm" id="editType">項目と見た目を編集</button><button class="btn" id="addItem">＋ 新規</button></div>
     <div class="tabs" role="tablist">${d.views.map(x => `<button role="tab" class="${x.id === view.id ? "on" : ""}" data-view="${x.id}">${{ table: "▦", cards: "▤", board: "▥", gallery: "▣" }[x.kind] || ""} ${esc(x.name)}</button>`).join("")}<button data-addview="1" title="見え方を追加" aria-label="見え方を追加">＋</button></div>
     <div class="toolbar"><input type="search" id="q" placeholder="この部屋を絞り込む" value="${esc(st.q)}">
       ${view.kind === "board" ? `<label class="muted">分ける項目 <select id="groupBy">${d.fields.filter(f => f.kind === "select").map(f => `<option value="${f.id}" ${f.id === view.group ? "selected" : ""}>${esc(f.name)}</option>`).join("") || `<option value="">（「選択（1つ）」の項目が必要）</option>`}</select></label>` : ""}
@@ -324,6 +366,7 @@ function viewType(v, id) {
   const gb = $("#groupBy"); if (gb) gb.onchange = e => { view.group = e.target.value; saveType(t, { views: d.views }); draw(); };
   $("#addItem").onclick = () => go("item/" + newItem(id, "", {}), { focusTitle: true });
   $("#editType").onclick = () => editTypeDialog(id);
+  $("#typeColor").onclick = async () => { const c = await pickColor("部屋の名前の色", d.titleColor); if (c === null) return; saveType(Store.get(id), { titleColor: c }); render(); };
   $("#typeCover").onclick = async () => { const r = await pickImage("部屋のカバー画像", Boolean(d.cover)); if (r === null) return; saveType(Store.get(id), { cover: r }); render(); };
   v.querySelectorAll("[data-view]").forEach(b => b.onclick = () => { st.view = b.dataset.view; viewType(v, id); });
   v.querySelector("[data-addview]").onclick = () => addViewDialog(id);
@@ -430,11 +473,11 @@ function viewItem(v, id) {
     <div class="row muted" style="font-size:13px;${d.cover ? "margin-top:-30px;position:relative" : ""}">
       <button class="page-icon big" id="iconBtn" aria-label="アイコンを変える" title="アイコンを変える">${esc(d.icon || t?.data.icon || "📄")}</button>
       <span class="sp"></span>
-      <button class="chipbtn" id="coverBtn">🖼 ${d.cover ? "カバーを変える" : "カバーをつける"}</button></div>
+      ${miniTools("coverBtn", "colorBtn", Boolean(d.cover))}</div>
     <div class="row muted" style="font-size:13px">
       <select id="moveType" style="width:auto;border:0;padding:2px 4px;color:var(--sub)" aria-label="入れる部屋">${[`<option value="">📄 ページ（部屋なし）</option>`, ...types().map(x => `<option value="${x.id}" ${x.id === d.type ? "selected" : ""}>${esc(x.data.icon)} ${esc(x.data.name)}</option>`)].join("")}</select>
       <span class="sp"></span><button class="btn ghost sm" id="pin">${d.pinned ? "📌 ピン留め中" : "📌 ピン留め"}</button></div>
-    <input class="title-input" id="title" value="${esc(d.title)}" placeholder="無題" aria-label="タイトル">
+    <input class="title-input" id="title" value="${esc(d.title)}" placeholder="無題" aria-label="タイトル" style="${titleStyle(d.titleColor)}">
     ${fields.length ? `<div class="props">${fields.map(f => `<div class="k" title="${esc(f.name)}">${esc(f.name)}</div><div>${propEditor(f, d.props?.[f.id])}</div>`).join("")}</div>` : t ? `<div class="hint" style="margin:6px 0 14px">この部屋にはまだ項目がありません。<a href="#type/${t.id}">部屋の画面</a>の「項目と見た目を編集」で追加できるよ。</div>` : `<div style="height:12px"></div>`}
     <div class="editor-tabs"><button data-mode="write" class="${mode === "write" ? "on" : ""}">書く</button><button data-mode="read" class="${mode === "read" ? "on" : ""}">読む</button><button id="insImg" title="本文に画像を入れる">🖼 画像を入れる</button><span class="sp"></span><span class="muted" id="saveState"></span></div>
     <textarea class="body" id="body" placeholder="ここに書く。&#10;# 見出し　- 箇条書き　**太字**　==マーカー==　[[ほかのページ]]" ${mode === "write" ? "" : "hidden"}>${esc(d.body)}</textarea>
@@ -450,6 +493,7 @@ function viewItem(v, id) {
     saveItem(cur(), { body: ta.value }); saveState("保存しました");
   };
   const typed = () => ({ title: $("#title").value, body: $("#body").value }); // 入力中の文字を先に保存してから描き直す
+  $("#colorBtn").onclick = async () => { const c = await pickColor("タイトルの色", cur().data.titleColor); if (c === null) return; saveItem(cur(), { ...typed(), titleColor: c }); render(); };
   $("#coverBtn").onclick = async () => { const r = await pickImage("カバー画像", Boolean(cur().data.cover)); if (r === null) return; saveItem(cur(), { ...typed(), cover: r }); render(); };
   $("#iconBtn").onclick = () => dialog("アイコン", `<p class="muted">絵文字を1つ入れてね（iPad の絵文字キーボードが使えるよ）</p><form class="row" id="icF" style="flex-wrap:nowrap"><input id="icIn" value="${esc(cur().data.icon || "")}" maxlength="4" style="font-size:28px;text-align:center;width:90px"><button class="btn">決める</button><button type="button" class="btn ghost" id="icClr">外す</button></form>`, (o, close) => {
     $("#icF", o).onsubmit = e => { e.preventDefault(); saveItem(cur(), { ...typed(), icon: $("#icIn", o).value.trim() }); close(); render(); };

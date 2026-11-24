@@ -179,6 +179,16 @@ textarea.body{min-height:46vh;font-size:16px;line-height:1.9;border:1px solid va
 .md hr{border:0;border-top:1px solid var(--line);margin:24px 0}
 .backlinks{margin-top:34px;border-top:1px solid var(--line);padding-top:16px}
 .hint{font-size:12px;color:var(--muted);margin-top:6px}
+.minitools{display:inline-flex;gap:6px;flex:none}
+.mini{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:15px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line2);color:var(--ink);opacity:.75;transition:opacity .15s,transform .15s}
+.mini:hover,.mini:focus-visible{opacity:1;transform:scale(1.06)}
+.mini .aa{font-family:var(--f-sys);font-weight:700;font-size:13px;background:linear-gradient(180deg,#8a8f99,#1d1d1f);-webkit-background-clip:text;background-clip:text;color:transparent}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.swatch{width:38px;height:38px;border-radius:50%;border:1px solid var(--line2);box-shadow:inset 0 0 0 2px rgba(255,255,255,.5);position:relative;overflow:hidden}
+.swatch.on{outline:3px solid var(--accent);outline-offset:2px}
+.swatch.custom{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);cursor:pointer}
+.swatch.custom input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:0;padding:0}
+.preview-title{font-size:34px;font-weight:700;margin-top:16px;padding:10px 14px;border-radius:var(--r-sm);background:var(--silver1);text-align:center}
 .fontpick{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-top:6px}
 .fontpick button{text-align:left;border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px 12px;background:var(--paper);display:flex;flex-direction:column}
 .fontpick button.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
