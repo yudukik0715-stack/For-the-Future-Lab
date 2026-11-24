@@ -1,0 +1,927 @@
+{
+ "library": [
+  {
+   "id": "p-transformer",
+   "kind": "paper",
+   "title": "Attention Is All You Need",
+   "authors": "Vaswani ほか",
+   "year": 2017,
+   "venue": "NeurIPS",
+   "url": "https://arxiv.org/abs/1706.03762",
+   "tags": [
+    "AI",
+    "言語モデル"
+   ],
+   "summary": "再帰や畳み込みを使わず、「注意機構（Attention）」だけで文章などの系列を処理する Transformer を提案した論文。計算を並列化しやすく、学習が速い。現在の大規模言語モデル（LLM）はほぼすべてこの構造の上に作られている。",
+   "points": [
+    "自己注意で、文中のどの単語どうしが関係するかを直接計算する",
+    "RNNのように1語ずつ順番に処理しないので並列化できる",
+    "機械翻訳で当時の最高精度を、より少ない学習コストで達成"
+   ],
+   "highlights": [
+    "注意機構だけで、系列変換の最高性能に届くことを示した"
+   ],
+   "note": "",
+   "status": "reading",
+   "added": "2026-11-24",
+   "source": "基礎論文（書誌情報は確認済みの定番論文）"
+  },
+  {
+   "id": "p-scaling",
+   "kind": "paper",
+   "title": "Scaling Laws for Neural Language Models",
+   "authors": "Kaplan ほか",
+   "year": 2020,
+   "venue": "arXiv",
+   "url": "https://arxiv.org/abs/2001.08361",
+   "tags": [
+    "AI",
+    "言語モデル"
+   ],
+   "summary": "言語モデルの性能（損失）が、パラメータ数・データ量・計算量に対して「べき乗則」できれいに改善することを示した。大きくすれば予測可能に賢くなる、という発見が巨大モデル開発競争の根拠になった。",
+   "points": [
+    "性能は3つの規模の要素それぞれのべき乗則に従う",
+    "モデルの形（層の深さ・幅）より規模の影響が大きい",
+    "計算予算が決まっているなら、モデルを大きくする配分が効率的と主張"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "基礎論文（書誌情報は確認済みの定番論文）"
+  },
+  {
+   "id": "p-alphafold",
+   "kind": "paper",
+   "title": "Highly accurate protein structure prediction with AlphaFold",
+   "authors": "Jumper ほか",
+   "year": 2021,
+   "venue": "Nature",
+   "url": "https://doi.org/10.1038/s41586-021-03819-2",
+   "tags": [
+    "生命科学",
+    "AI"
+   ],
+   "summary": "アミノ酸配列からタンパク質の立体構造を、実験に近い精度で予測する AlphaFold2 を報告。50年来の難問「タンパク質構造予測問題」を大きく前進させ、2024年ノーベル化学賞にもつながった。",
+   "points": [
+    "国際コンテストCASP14で他を大きく上回る精度",
+    "進化的に関連する配列の情報と注意機構を組み合わせた",
+    "創薬・基礎生物学の研究速度を大きく変えた"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "基礎論文（書誌情報は確認済みの定番論文）"
+  },
+  {
+   "id": "p-crispr",
+   "kind": "paper",
+   "title": "A Programmable Dual-RNA–Guided DNA Endonuclease in Adaptive Bacterial Immunity",
+   "authors": "Jinek, Doudna, Charpentier ほか",
+   "year": 2012,
+   "venue": "Science",
+   "url": "https://doi.org/10.1126/science.1225829",
+   "tags": [
+    "生命科学",
+    "ゲノム編集"
+   ],
+   "summary": "細菌の免疫システム CRISPR-Cas9 が、ガイドRNAを設計するだけで狙ったDNAを切断できる「プログラム可能なハサミ」として使えることを示した。ゲノム編集革命の出発点で、2020年ノーベル化学賞の対象。",
+   "points": [
+    "Cas9はガイドRNAと組み合わせて特定のDNA配列を切る",
+    "2つのRNAを1本にまとめた単一ガイドRNAを設計",
+    "狙った遺伝子を書き換える技術の基礎になった"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "基礎論文（書誌情報は確認済みの定番論文）"
+  },
+  {
+   "id": "p-testing",
+   "kind": "paper",
+   "title": "Test-Enhanced Learning",
+   "authors": "Roediger & Karpicke",
+   "year": 2006,
+   "venue": "Psychological Science",
+   "url": "https://doi.org/10.1111/j.1467-9280.2006.01693.x",
+   "tags": [
+    "学習法",
+    "記憶"
+   ],
+   "summary": "教科書を読み返すより、思い出すテストをしたほうが長期的によく覚えていられることを実験で示した。「想起練習（テスト効果）」の代表的研究。",
+   "points": [
+    "直後のテストでは再読グループが有利",
+    "1週間後には、テストを受けたグループが大きく上回った",
+    "学習者本人は再読のほうが効果的だと誤って感じやすい"
+   ],
+   "highlights": [
+    "思い出す行為そのものが記憶を強くする"
+   ],
+   "note": "",
+   "status": "done",
+   "added": "2026-11-24",
+   "source": "基礎論文（書誌情報は確認済みの定番論文）"
+  },
+  {
+   "id": "p-spacing",
+   "kind": "paper",
+   "title": "Distributed practice in verbal recall tasks: A review and quantitative synthesis",
+   "authors": "Cepeda ほか",
+   "year": 2006,
+   "venue": "Psychological Bulletin",
+   "url": "https://doi.org/10.1037/0033-2909.132.3.354",
+   "tags": [
+    "学習法",
+    "記憶"
+   ],
+   "summary": "数百の研究をまとめたメタ分析。同じ量の勉強でも、一度に詰め込むより間隔をあけて分散したほうが記憶が長持ちする「分散学習効果」を確認した。",
+   "points": [
+    "分散学習は集中学習より一貫して効果が高い",
+    "最適な間隔は、覚えておきたい期間が長いほど長くなる",
+    "間隔反復アプリの理論的な裏付け"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "基礎論文（書誌情報は確認済みの定番論文）"
+  },
+  {
+   "id": "p-prospect",
+   "kind": "paper",
+   "title": "Prospect Theory: An Analysis of Decision under Risk",
+   "authors": "Kahneman & Tversky",
+   "year": 1979,
+   "venue": "Econometrica",
+   "url": "https://doi.org/10.2307/1914185",
+   "tags": [
+    "経済",
+    "心理学"
+   ],
+   "summary": "人はリスクのある選択で、合理的な期待効用どおりには動かないことを示し、代わりに「プロスペクト理論」を提案した。行動経済学の出発点。",
+   "points": [
+    "人は絶対額ではなく、基準点からの損得で判断する",
+    "同じ額なら、得より損のほうを強く感じる（損失回避）",
+    "小さな確率を過大評価しやすい"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "基礎論文（書誌情報は確認済みの定番論文）"
+  },
+  {
+   "id": "p-bitcoin",
+   "kind": "paper",
+   "title": "Bitcoin: A Peer-to-Peer Electronic Cash System",
+   "authors": "Satoshi Nakamoto",
+   "year": 2008,
+   "venue": "ホワイトペーパー",
+   "url": "https://bitcoin.org/bitcoin.pdf",
+   "tags": [
+    "お金",
+    "暗号技術"
+   ],
+   "summary": "銀行などの信頼できる第三者なしで、個人間で直接送金できる電子通貨の仕組みを提案。取引履歴をブロックチェーンとして全員で共有し、計算量による証明（PoW）で改ざんを防ぐ。",
+   "points": [
+    "二重支払い問題を、公開台帳と多数決的な合意で解決",
+    "改ざんには過半数の計算力が必要になる",
+    "わずか9ページで新しい分野を生んだ"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "基礎論文（書誌情報は確認済みの定番論文）"
+  },
+  {
+   "id": "n-attosecond",
+   "kind": "news",
+   "title": "300アト秒のX線フラッシュ、最短記録を更新",
+   "authors": "ScienceDaily（見出し）",
+   "year": 2026,
+   "venue": "2026-11-07",
+   "url": "https://www.sciencedaily.com/news/top/",
+   "tags": [
+    "物理学"
+   ],
+   "summary": "研究チームが、わずか300アト秒（1アト秒は100京分の1秒）しか続かないX線の閃光を作り出したと報告。電子の動きを「コマ撮り」する研究に使われる。",
+   "points": [],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "ニュース一覧の見出しから取得。本文は未確認なので、出典で確かめてから使ってね"
+  },
+  {
+   "id": "n-space-robot",
+   "kind": "news",
+   "title": "ロボットが宇宙で構造物の一部を自律的に組み立て",
+   "authors": "ScienceDaily（見出し）",
+   "year": 2026,
+   "venue": "2026-11-09",
+   "url": "https://www.sciencedaily.com/news/top/",
+   "tags": [
+    "宇宙",
+    "ロボット"
+   ],
+   "summary": "ロボットが人の操作なしに、宇宙空間で構造物の一部を組み立てたと報告。将来の宇宙ステーションや大型望遠鏡の建設につながる技術。",
+   "points": [],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "ニュース一覧の見出しから取得。本文は未確認なので、出典で確かめてから使ってね"
+  },
+  {
+   "id": "n-alzheimer",
+   "kind": "news",
+   "title": "アルツハイマー病の初期兆候は脳の外で始まる可能性",
+   "authors": "ScienceDaily（見出し）",
+   "year": 2026,
+   "venue": "2026-11-09",
+   "url": "https://www.sciencedaily.com/news/top/",
+   "tags": [
+    "生命科学",
+    "医療"
+   ],
+   "summary": "アルツハイマー病の一部の初期兆候が、脳以外の場所で始まっている可能性を示す研究が報告された。早期発見の新しい手がかりになるかもしれない。",
+   "points": [],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "ニュース一覧の見出しから取得。本文は未確認なので、出典で確かめてから使ってね"
+  },
+  {
+   "id": "n-altermagnet",
+   "kind": "news",
+   "title": "「押すだけ」で交代磁性体の性質が大きく変わる",
+   "authors": "ScienceDaily（見出し）",
+   "year": 2026,
+   "venue": "2026-11-04",
+   "url": "https://www.sciencedaily.com/news/top/",
+   "tags": [
+    "物理学",
+    "材料"
+   ],
+   "summary": "交代磁性体（アルターマグネット）という新しい種類の磁性材料を機械的に圧縮すると、磁気的・電気的な性質が大きく変わることが報告された。次世代の電子デバイスに関わる研究。",
+   "points": [],
+   "highlights": [],
+   "note": "",
+   "status": "later",
+   "added": "2026-11-24",
+   "source": "ニュース一覧の見出しから取得。本文は未確認なので、出典で確かめてから使ってね"
+  },
+  {
+   "id": "e-spaced",
+   "kind": "encyclopedia",
+   "title": "間隔反復",
+   "authors": "Claude による解説",
+   "year": 2026,
+   "venue": "百科事典",
+   "url": "",
+   "tags": [
+    "学習法",
+    "記憶"
+   ],
+   "summary": "一度覚えた内容を、だんだん間隔を広げながら復習する学習法。忘れかけたタイミングで思い出すと、記憶が強く長く残る。エビングハウスの忘却曲線の研究と分散学習効果が土台にある。",
+   "points": [
+    "復習間隔の例：1日後→3日後→1週間後→1か月後",
+    "「思い出す」練習と組み合わせると効果が高い",
+    "Anki などの暗記アプリはこの仕組みで出題時期を決めている"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "done",
+   "added": "2026-11-24",
+   "source": "Claude の知識から作成した解説"
+  },
+  {
+   "id": "e-compound",
+   "kind": "encyclopedia",
+   "title": "複利",
+   "authors": "Claude による解説",
+   "year": 2026,
+   "venue": "百科事典",
+   "url": "",
+   "tags": [
+    "お金",
+    "数学"
+   ],
+   "summary": "利息にもさらに利息がつく仕組み。元本×(1+利率)^年数 で増える。期間が長いほど、単利との差が爆発的に広がる。",
+   "points": [
+    "年5%なら約14年で2倍（72の法則：72÷5≒14）",
+    "借金にも複利は働く",
+    "学習や習慣の「積み重ね」のたとえにも使われる"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "done",
+   "added": "2026-11-24",
+   "source": "Claude の知識から作成した解説"
+  },
+  {
+   "id": "e-transformer",
+   "kind": "encyclopedia",
+   "title": "Transformer",
+   "authors": "Claude による解説",
+   "year": 2026,
+   "venue": "百科事典",
+   "url": "",
+   "tags": [
+    "AI",
+    "言語モデル"
+   ],
+   "summary": "2017年に提案されたニューラルネットワークの構造。「自己注意」で、入力のすべての要素どうしの関係を一度に計算する。ChatGPT や Claude などの大規模言語モデルの基盤。",
+   "points": [
+    "エンコーダとデコーダからなる（LLMは主にデコーダのみ）",
+    "位置情報は「位置エンコーディング」で与える",
+    "画像・音声・タンパク質など言語以外にも広がった"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "done",
+   "added": "2026-11-24",
+   "source": "Claude の知識から作成した解説"
+  },
+  {
+   "id": "e-crispr",
+   "kind": "encyclopedia",
+   "title": "CRISPR-Cas9",
+   "authors": "Claude による解説",
+   "year": 2026,
+   "venue": "百科事典",
+   "url": "",
+   "tags": [
+    "生命科学",
+    "ゲノム編集"
+   ],
+   "summary": "狙ったDNA配列を切断して遺伝子を書き換える技術。ガイドRNAが目的の配列を見つけ、Cas9という酵素が切る。従来より安く速く正確に編集できる。",
+   "points": [
+    "もとは細菌がウイルスから身を守る免疫の仕組み",
+    "農作物の品種改良や遺伝病治療に応用",
+    "2023年に鎌状赤血球症の治療薬として初めて承認された（英国・米国）"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "done",
+   "added": "2026-11-24",
+   "source": "Claude の知識から作成した解説"
+  },
+  {
+   "id": "e-pvalue",
+   "kind": "encyclopedia",
+   "title": "p値（統計的有意性）",
+   "authors": "Claude による解説",
+   "year": 2026,
+   "venue": "百科事典",
+   "url": "",
+   "tags": [
+    "統計",
+    "データ分析"
+   ],
+   "summary": "「本当は差がない」と仮定したとき、観測したデータ以上に極端な結果が偶然出る確率。小さいほど「偶然では説明しにくい」ことを示す。",
+   "points": [
+    "慣習的に p<0.05 を「有意」とすることが多い",
+    "p値は効果の大きさを示さない",
+    "「仮説が正しい確率」ではない点に注意"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "done",
+   "added": "2026-11-24",
+   "source": "Claude の知識から作成した解説"
+  },
+  {
+   "id": "e-tfr",
+   "kind": "encyclopedia",
+   "title": "合計特殊出生率",
+   "authors": "Claude による解説",
+   "year": 2026,
+   "venue": "百科事典",
+   "url": "",
+   "tags": [
+    "人口",
+    "社会"
+   ],
+   "summary": "一人の女性が一生のうちに産む子どもの数の平均を、その年の年齢別出生率から計算した指標。人口を維持するにはおよそ2.07が必要とされる。",
+   "points": [
+    "日本は2024年に1.15で過去最低",
+    "出生数は「出生率×出産年齢の女性の人数」で決まる",
+    "晩婚化・未婚化が大きな要因とされる"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "done",
+   "added": "2026-11-24",
+   "source": "Claude の知識から作成した解説"
+  },
+  {
+   "id": "m-howto",
+   "kind": "note",
+   "title": "書庫の使い方メモ",
+   "authors": "自分",
+   "year": 2026,
+   "venue": "メモ",
+   "url": "",
+   "tags": [
+    "使い方"
+   ],
+   "summary": "気になった論文・ニュース・用語はまず書庫に入れる。読んだらハイライトとメモを残し、分からないところはチューターに聞く。研究テーマに関係するものは同じタグをつけると、研究室や観測室とつながる。",
+   "points": [
+    "Research などで作った論文まとめは「取り込む」から貼り付け",
+    "用語は「百科事典をつくる」でAIに解説を書いてもらう"
+   ],
+   "highlights": [],
+   "note": "",
+   "status": "done",
+   "added": "2026-11-24",
+   "source": "自分"
+  }
+ ],
+ "courses": [
+  {
+   "id": "c-ai",
+   "faculty": "情報・AI学部",
+   "title": "AIのしくみ入門",
+   "desc": "機械学習から大規模言語モデルまで、今のAIが動く仕組みを理解する。",
+   "lessons": [
+    {
+     "id": "l1",
+     "title": "機械学習とは何か"
+    },
+    {
+     "id": "l2",
+     "title": "ニューラルネットワーク"
+    },
+    {
+     "id": "l3",
+     "title": "Transformerと注意機構"
+    },
+    {
+     "id": "l4",
+     "title": "大規模言語モデルとスケーリング則"
+    },
+    {
+     "id": "l5",
+     "title": "AIの限界と安全性"
+    }
+   ],
+   "done": [
+    "l1",
+    "l2"
+   ]
+  },
+  {
+   "id": "c-data",
+   "faculty": "情報・AI学部",
+   "title": "データ分析の基礎",
+   "desc": "数字にだまされず、データから正しく結論を引き出す力。",
+   "lessons": [
+    {
+     "id": "l1",
+     "title": "平均・中央値・ばらつき"
+    },
+    {
+     "id": "l2",
+     "title": "グラフの正しい読み方"
+    },
+    {
+     "id": "l3",
+     "title": "相関と因果の違い"
+    },
+    {
+     "id": "l4",
+     "title": "仮説検定とp値"
+    },
+    {
+     "id": "l5",
+     "title": "実データで分析してみる"
+    }
+   ],
+   "done": [
+    "l1"
+   ]
+  },
+  {
+   "id": "c-money",
+   "faculty": "経済・金融学部",
+   "title": "お金と経済の基礎",
+   "desc": "社会に出る前に知っておきたい、お金と経済の仕組み。",
+   "lessons": [
+    {
+     "id": "l1",
+     "title": "複利の力"
+    },
+    {
+     "id": "l2",
+     "title": "インフレと金利"
+    },
+    {
+     "id": "l3",
+     "title": "株式と債券"
+    },
+    {
+     "id": "l4",
+     "title": "行動経済学とお金の失敗"
+    },
+    {
+     "id": "l5",
+     "title": "ライフプランと資産形成"
+    }
+   ],
+   "done": [
+    "l1"
+   ]
+  },
+  {
+   "id": "c-bio",
+   "faculty": "生命科学部",
+   "title": "生命と医療の最前線",
+   "desc": "ゲノム編集やAI創薬など、生命科学の最先端を追う。",
+   "lessons": [
+    {
+     "id": "l1",
+     "title": "DNAと遺伝子の基礎"
+    },
+    {
+     "id": "l2",
+     "title": "ゲノム編集 CRISPR"
+    },
+    {
+     "id": "l3",
+     "title": "タンパク質とAlphaFold"
+    },
+    {
+     "id": "l4",
+     "title": "老化の科学"
+    },
+    {
+     "id": "l5",
+     "title": "脳と記憶のしくみ"
+    }
+   ],
+   "done": []
+  },
+  {
+   "id": "c-learn",
+   "faculty": "思考法学部",
+   "title": "学び方を学ぶ",
+   "desc": "科学的に効果が確かめられた勉強法と、考える技術。",
+   "lessons": [
+    {
+     "id": "l1",
+     "title": "想起練習（テスト効果）"
+    },
+    {
+     "id": "l2",
+     "title": "間隔反復"
+    },
+    {
+     "id": "l3",
+     "title": "メタ認知"
+    },
+    {
+     "id": "l4",
+     "title": "ノート術とセカンドブレイン"
+    },
+    {
+     "id": "l5",
+     "title": "良い問いの立て方"
+    }
+   ],
+   "done": [
+    "l1",
+    "l2",
+    "l3"
+   ]
+  },
+  {
+   "id": "c-society",
+   "faculty": "社会科学部",
+   "title": "データで読む日本社会",
+   "desc": "人口・労働・社会保障を、統計から自分の目で読み解く。",
+   "lessons": [
+    {
+     "id": "l1",
+     "title": "人口動態の基礎"
+    },
+    {
+     "id": "l2",
+     "title": "少子化の要因"
+    },
+    {
+     "id": "l3",
+     "title": "労働と賃金"
+    },
+    {
+     "id": "l4",
+     "title": "社会保障のしくみ"
+    },
+    {
+     "id": "l5",
+     "title": "未来予測の方法"
+    }
+   ],
+   "done": [
+    "l1"
+   ]
+  }
+ ],
+ "research": [
+  {
+   "id": "r-sleep",
+   "title": "睡眠と集中力の関係",
+   "stage": "実験",
+   "tags": [
+    "健康",
+    "学習法"
+   ],
+   "updated": "2026-11-20",
+   "hypothesis": "就寝時刻を一定にすると、翌日の勉強時の集中時間が伸びる。",
+   "survey": "睡眠と認知機能の文献を3本読む。体内時計の仕組みを整理した。",
+   "experiment": "2週間、23:30就寝で固定。毎日ポモドーロ数を記録する。",
+   "conclusion": ""
+  },
+  {
+   "id": "r-birth",
+   "title": "少子化はなぜ止まらないのか",
+   "stage": "調査",
+   "tags": [
+    "人口",
+    "社会"
+   ],
+   "updated": "2026-11-15",
+   "hypothesis": "経済的な要因より「将来の見通し」への不安が大きく影響している。",
+   "survey": "出生数と合計特殊出生率の推移を観測室に保存。各国の家族政策を比較中。",
+   "experiment": "",
+   "conclusion": ""
+  },
+  {
+   "id": "r-compound",
+   "title": "複利で考える自己投資",
+   "stage": "結論",
+   "tags": [
+    "お金",
+    "学習法"
+   ],
+   "updated": "2026-10-30",
+   "hypothesis": "毎日1%の改善は1年で約37倍になる、は現実の学習にも当てはまるか。",
+   "survey": "学習曲線と習慣化の研究を調べた。",
+   "experiment": "英単語学習を3か月続けて、定着率を記録。",
+   "conclusion": "伸びは直線ではなく停滞期がある。ただし続けた期間が長いほど後半で加速した。"
+  }
+ ],
+ "series": [
+  {
+   "id": "s-births",
+   "title": "日本の出生数",
+   "unit": "万人",
+   "source": "厚生労働省 人口動態統計（概数）",
+   "tags": [
+    "人口",
+    "社会"
+   ],
+   "points": [
+    [
+     "2000",
+     119.1
+    ],
+    [
+     "2005",
+     106.3
+    ],
+    [
+     "2010",
+     107.1
+    ],
+    [
+     "2015",
+     100.6
+    ],
+    [
+     "2020",
+     84.1
+    ],
+    [
+     "2022",
+     77.1
+    ],
+    [
+     "2023",
+     72.7
+    ],
+    [
+     "2024",
+     68.6
+    ]
+   ]
+  },
+  {
+   "id": "s-tfr",
+   "title": "日本の合計特殊出生率",
+   "unit": "",
+   "source": "厚生労働省 人口動態統計（概数）",
+   "tags": [
+    "人口",
+    "社会"
+   ],
+   "points": [
+    [
+     "2000",
+     1.36
+    ],
+    [
+     "2005",
+     1.26
+    ],
+    [
+     "2010",
+     1.39
+    ],
+    [
+     "2015",
+     1.45
+    ],
+    [
+     "2020",
+     1.33
+    ],
+    [
+     "2022",
+     1.26
+    ],
+    [
+     "2023",
+     1.2
+    ],
+    [
+     "2024",
+     1.15
+    ]
+   ]
+  },
+  {
+   "id": "s-world",
+   "title": "世界人口",
+   "unit": "億人",
+   "source": "国連 World Population Prospects（概数）",
+   "tags": [
+    "人口"
+   ],
+   "points": [
+    [
+     "2000",
+     61.5
+    ],
+    [
+     "2005",
+     65.4
+    ],
+    [
+     "2010",
+     69.9
+    ],
+    [
+     "2015",
+     74.3
+    ],
+    [
+     "2020",
+     78.4
+    ],
+    [
+     "2024",
+     81.6
+    ]
+   ]
+  },
+  {
+   "id": "s-japan",
+   "title": "日本の総人口",
+   "unit": "億人",
+   "source": "総務省 人口推計（概数）",
+   "tags": [
+    "人口",
+    "社会"
+   ],
+   "points": [
+    [
+     "2000",
+     1.269
+    ],
+    [
+     "2005",
+     1.278
+    ],
+    [
+     "2010",
+     1.281
+    ],
+    [
+     "2015",
+     1.271
+    ],
+    [
+     "2020",
+     1.261
+    ],
+    [
+     "2024",
+     1.238
+    ]
+   ]
+  }
+ ],
+ "logs": [
+  {
+   "id": "g0",
+   "date": "2026-11-11",
+   "minutes": 40,
+   "course": "c-ai"
+  },
+  {
+   "id": "g2",
+   "date": "2026-11-13",
+   "minutes": 55,
+   "course": "c-money"
+  },
+  {
+   "id": "g3",
+   "date": "2026-11-14",
+   "minutes": 30,
+   "course": "c-data"
+  },
+  {
+   "id": "g4",
+   "date": "2026-11-15",
+   "minutes": 60,
+   "course": "c-ai"
+  },
+  {
+   "id": "g5",
+   "date": "2026-11-16",
+   "minutes": 25,
+   "course": "c-learn"
+  },
+  {
+   "id": "g7",
+   "date": "2026-11-18",
+   "minutes": 45,
+   "course": "c-data"
+  },
+  {
+   "id": "g8",
+   "date": "2026-11-19",
+   "minutes": 70,
+   "course": "c-ai"
+  },
+  {
+   "id": "g9",
+   "date": "2026-11-20",
+   "minutes": 35,
+   "course": "c-learn"
+  },
+  {
+   "id": "g10",
+   "date": "2026-11-21",
+   "minutes": 50,
+   "course": "c-money"
+  },
+  {
+   "id": "g12",
+   "date": "2026-11-23",
+   "minutes": 40,
+   "course": "c-ai"
+  },
+  {
+   "id": "g13",
+   "date": "2026-11-24",
+   "minutes": 65,
+   "course": "c-learn"
+  }
+ ],
+ "visions": [
+  {
+   "id": "v1",
+   "when": "1年後",
+   "text": "研究テーマを5つ結論まで持っていく",
+   "order": 1
+  },
+  {
+   "id": "v2",
+   "when": "5年後",
+   "text": "データで社会課題を語れる人になる",
+   "order": 2
+  },
+  {
+   "id": "v3",
+   "when": "10年後",
+   "text": "自分の研究を仕事にしている",
+   "order": 3
+  }
+ ]
+}

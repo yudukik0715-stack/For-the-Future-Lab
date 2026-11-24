@@ -24,3 +24,13 @@
 - **総合研究室・世界観測室**：前の案から引き継ぎ。チューターに研究の批評やデータの読み解きを頼める
 
 `lab/seed.json` は初期データです（アーティファクト外でひらいたときのサンプル表示にも使う）。
+
+## Safari などのブラウザで開ける版（`docs/`）
+
+`docs/` は claude.ai がなくても動く、ふつうのWebページ版です。GitHub Pages で公開すると、iPhone の Safari からURLで開けます（ホーム画面に追加するとアプリのように使える）。
+
+- データはその端末のブラウザに保存されます。別の端末へは「設定 → 書き出す／読み込む」で移せます
+- AI機能（チューター・講義・百科事典づくり）は、「設定」に Claude API のキーを入れると使えます。料金は API の従量課金で、Claude の月額プランとは別です
+- `docs/vendor/` には Anthropic 公式 SDK（@anthropic-ai/sdk 1.6.0）をブラウザ用にまとめたファイルが入っています
+
+公開手順：GitHub のリポジトリ → Settings → Pages → Source を「Deploy from a branch」、ブランチを選び、フォルダを `/docs` にして Save。
