@@ -27,12 +27,21 @@ class SupabaseAdapter {
     this.sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
   async session() { const { data } = await this.sb.auth.getSession(); return data.session; }
-  async sendCode(email) {
-    const { error } = await this.sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href.split("#")[0] } });
+  async signUp(email, password) {
+    const { data, error } = await this.sb.auth.signUp({ email, password, options: { emailRedirectTo: location.href.split("#")[0] } });
+    if (error) throw error;
+    return Boolean(data.session); // false なら確認メールのリンクを押す必要がある
+  }
+  async signIn(email, password) {
+    const { error } = await this.sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
   }
-  async verifyCode(email, token) {
-    const { error } = await this.sb.auth.verifyOtp({ email, token, type: "email" });
+  async resetPassword(email) {
+    const { error } = await this.sb.auth.resetPasswordForEmail(email, { redirectTo: location.href.split("#")[0] });
+    if (error) throw error;
+  }
+  async updatePassword(password) {
+    const { error } = await this.sb.auth.updateUser({ password });
     if (error) throw error;
   }
   async signOut() { await this.sb.auth.signOut(); }

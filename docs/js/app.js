@@ -493,21 +493,45 @@ function viewSettings(v) {
 function applyTheme() { const t = prefs.get("theme", "system"); if (t === "system") document.documentElement.removeAttribute("data-theme"); else document.documentElement.dataset.theme = t; }
 
 /* ================= ログイン（同期オンのとき） ================= */
-function viewLogin() {
-  root.innerHTML = `<div class="login"><h1>For the Future Lab</h1><p class="lead">メールアドレスでログインすると、iPad と iPhone で同じデータが使えるよ。</p>
-    <form id="lf" class="card"><label class="muted" for="em">メールアドレス</label><input id="em" type="email" autocomplete="email" inputmode="email" required>
-      <button class="btn" style="margin-top:10px;width:100%">ログイン用のコードを送る</button></form>
-    <form id="cf" class="card" style="margin-top:12px" hidden><p>メールに届いた<b>6桁のコード</b>を入れてね。メールのリンクを押してもログインできるよ。</p>
-      <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" style="font-size:22px;letter-spacing:.3em;text-align:center">
-      <button class="btn" style="margin-top:10px;width:100%">ログイン</button></form>
+const AUTH_ERR = m => /Invalid login credentials/i.test(m) ? "メールアドレスかパスワードが違うみたい。" :
+  /Email not confirmed/i.test(m) ? "まだメールの確認が済んでいないよ。届いたメールのリンクを押してから、もう一度ログインしてね。" :
+  /already registered|already been registered/i.test(m) ? "このメールアドレスはもう登録されてるよ。「ログイン」から入ってね。" :
+  /Password should be at least/i.test(m) ? "パスワードは6文字以上にしてね。" :
+  /rate limit/i.test(m) ? "短い時間に何度も試したみたい。少し時間をおいてね。" : m;
+function viewLogin(mode = "signin") {
+  const signup = mode === "signup";
+  root.innerHTML = `<div class="login"><h1>For the Future Lab</h1><p class="lead">同じメールアドレスとパスワードでログインすると、iPad と iPhone で同じデータが使えるよ。</p>
+    <form id="lf" class="card">
+      <label class="muted" for="em">メールアドレス</label><input id="em" type="email" autocomplete="username" inputmode="email" required>
+      <label class="muted" for="pw" style="display:block;margin-top:10px">パスワード${signup ? "（6文字以上）" : ""}</label><input id="pw" type="password" autocomplete="${signup ? "new-password" : "current-password"}" minlength="6" required>
+      <button class="btn" style="margin-top:14px;width:100%">${signup ? "登録する" : "ログイン"}</button>
+    </form>
+    <div class="row" style="margin-top:12px;justify-content:space-between">
+      <button class="btn ghost sm" id="switch">${signup ? "登録済みの人はこちら（ログイン）" : "はじめて使う人はこちら（登録）"}</button>
+      ${signup ? "" : `<button class="btn ghost sm" id="forgot">パスワードを忘れた</button>`}
+    </div>
     <p class="muted" id="lmsg" role="status"></p></div>`;
-  let email = "";
-  $("#lf").onsubmit = async e => { e.preventDefault(); email = $("#em").value.trim(); $("#lmsg").textContent = "送っています…";
-    try { await Store.adapter.sendCode(email); $("#cf").hidden = false; $("#lmsg").textContent = `${email} に送りました。迷惑メールのフォルダも見てみてね。`; $("#code").focus(); }
-    catch (err) { $("#lmsg").textContent = "送れませんでした：" + err.message; } };
-  $("#cf").onsubmit = async e => { e.preventDefault(); $("#lmsg").textContent = "確認しています…";
-    try { await Store.adapter.verifyCode(email, $("#code").value.trim()); await Store.loadCloud(); start(); }
-    catch (err) { $("#lmsg").textContent = "ログインできませんでした：" + err.message; } };
+  const msg = t => $("#lmsg").textContent = t;
+  $("#switch").onclick = () => viewLogin(signup ? "signin" : "signup");
+  const fg = $("#forgot"); if (fg) fg.onclick = async () => {
+    const email = $("#em").value.trim(); if (!email) { msg("先にメールアドレスを入れてね。"); $("#em").focus(); return; }
+    try { await Store.adapter.resetPassword(email); msg(`${email} に再設定のメールを送ったよ。リンクを押すと、新しいパスワードを決められる。`); } catch (e) { msg(AUTH_ERR(e.message)); }
+  };
+  $("#lf").onsubmit = async e => {
+    e.preventDefault(); const email = $("#em").value.trim(), pw = $("#pw").value;
+    msg(signup ? "登録しています…" : "ログインしています…");
+    try {
+      if (signup) {
+        const ready = await Store.adapter.signUp(email, pw);
+        if (!ready) { msg(`${email} に確認メールを送ったよ。メールのリンクを押したら、この画面の「ログイン」から入ってね。（迷惑メールのフォルダも見てみて）`); return; }
+      } else await Store.adapter.signIn(email, pw);
+      await Store.loadCloud(); start();
+    } catch (err) { msg(AUTH_ERR(err.message || String(err))); }
+  };
+}
+function viewNewPassword() {
+  root.innerHTML = `<div class="login"><h1>新しいパスワード</h1><form id="np" class="card"><label class="muted" for="npw">新しいパスワード（6文字以上）</label><input id="npw" type="password" autocomplete="new-password" minlength="6" required><button class="btn" style="margin-top:14px;width:100%">決める</button></form><p class="muted" id="lmsg" role="status"></p></div>`;
+  $("#np").onsubmit = async e => { e.preventDefault(); try { await Store.adapter.updatePassword($("#npw").value); history.replaceState(null, "", location.pathname); await Store.loadCloud(); start(); toast("パスワードを変えました"); } catch (err) { $("#lmsg").textContent = AUTH_ERR(err.message); } };
 }
 
 /* ================= 起動 ================= */
@@ -530,8 +554,11 @@ applyTheme();
 (async () => {
   root.innerHTML = `<div class="login"><p class="muted">ひらいています…</p></div>`;
   try {
+    const recovering = /type=recovery/.test(location.hash + location.search);
     await Store.init();
-    if (Store.status === "signed-out") viewLogin(); else start();
+    if (Store.status === "signed-out") viewLogin();
+    else if (recovering) viewNewPassword();
+    else start();
   } catch (e) {
     root.innerHTML = `<div class="login"><h1>ひらけませんでした</h1><p>${esc(e.message || e)}</p><button class="btn" onclick="location.reload()">もう一度</button></div>`;
   }

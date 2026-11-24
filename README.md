@@ -26,11 +26,12 @@
 
 ## iPad と iPhone で同期する（Supabase）
 
-1. supabase.com でプロジェクトを作る
+1. supabase.com でプロジェクトを作る（リージョンは Tokyo）
 2. SQL Editor に `supabase/schema.sql` を貼って Run
 3. Authentication → URL Configuration の Site URL に公開URL（`https://yudukik0715-stack.github.io/For-the-Future-Lab/`）を入れる
-4. Authentication → Email Templates → Magic Link の本文に `{{ .Token }}` を入れる（メールに6桁のコードが載るようにする）
-5. Project URL と anon key を `docs/js/config.js` に書く（service_role key は書かない）
+4. Project URL と anon / publishable key を `docs/js/config.js` に書く（service_role / secret key は書かない）
+
+ログインは「メールアドレス＋パスワード」。はじめての端末では「登録」し、確認メールのリンクを押してからログインする。
 
 ## これまでの案（`proposals/`）
 
